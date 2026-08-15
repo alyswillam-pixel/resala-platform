@@ -1,0 +1,7 @@
+# PostgreSQL
+# ------------------------------------------------------------------------------
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=resala_platform
+POSTGRES_USER=zwJxmfMeufKgvWokRFHPfQcbptHqJfwu
+POSTGRES_PASSWORD=lVjkubVArTBZBn5q3MDuB3ATA5GrM1W4UZvorDgtlkn2YyokLChQNeQx07RwyWik
