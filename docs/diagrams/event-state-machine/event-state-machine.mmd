@@ -1,0 +1,57 @@
+flowchart TB
+
+    START(( ))
+    DRAFT["Draft"]
+    TREASURER["Pending Treasurer Review"]
+    PRESIDENT["Pending Presidential Review"]
+    APPROVED["Budget Approved"]
+    ACTIVE["Active"]
+    COMPLETED["Completed"]
+    REJECTED["Budget Rejected"]
+    TURNED_DOWN["Turned Down"]
+    END1(( ))
+    END2(( ))
+
+    %% Main vertical spine
+    START --> DRAFT
+    DRAFT -->|Submit Event| TREASURER
+    TREASURER -->|Escalate| PRESIDENT
+    PRESIDENT -->|Budget Approved| APPROVED
+    TREASURER -->|Budget Approved| APPROVED
+    APPROVED -->|Event Accepts Requests| ACTIVE
+    ACTIVE -->|All Requests Approved| COMPLETED
+    COMPLETED --> END1
+
+    %% Rejection branch
+    TREASURER -->|Budget Rejected| REJECTED
+    PRESIDENT -->|Budget Rejected| REJECTED
+
+    REJECTED -->|Revise & Resubmit| DRAFT
+    REJECTED -->|Event Refused| TURNED_DOWN
+    TURNED_DOWN --> END2
+
+    %% Invisible layout constraints
+    PRESIDENT ~~~ REJECTED
+    APPROVED ~~~ REJECTED
+    ACTIVE ~~~ TURNED_DOWN
+
+    %% Styling
+    classDef draft fill:#F1EFE8,stroke:#5F5E5A,color:#2C2C2A
+    classDef pending fill:#FAEEDA,stroke:#854F0B,color:#412402
+    classDef review fill:#EEEDFE,stroke:#534AB7,color:#26215C
+    classDef approved fill:#E6F1FB,stroke:#185FA5,color:#042C53
+    classDef active fill:#E1F5EE,stroke:#0F6E56,color:#04342C
+    classDef done fill:#EAF3DE,stroke:#3B6D11,color:#173404
+    classDef rejected fill:#FCEBEB,stroke:#A32D2D,color:#5C1111
+    classDef turnedDown fill:#FCEBEB,stroke:#A32D2D,color:#5C1111
+    classDef terminal fill:#2C2C2A,stroke:#2C2C2A,color:#FFFFFF
+
+    class DRAFT draft
+    class TREASURER pending
+    class PRESIDENT review
+    class APPROVED approved
+    class ACTIVE active
+    class COMPLETED done
+    class REJECTED rejected
+    class TURNED_DOWN turnedDown
+    class START,END1,END2 terminal
