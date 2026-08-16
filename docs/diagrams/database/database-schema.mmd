@@ -1,0 +1,116 @@
+erDiagram
+    COMMITTEE ||--o{ USER : "has members"
+    COMMITTEE ||--o| USER : "director"
+    COMMITTEE ||--o| USER : "vice_director"
+    USER ||--o{ EVENT : "requester"
+    EVENT ||--o{ EVENT_STATE_TRANSITION : "logs"
+    USER ||--o{ EVENT_STATE_TRANSITION : "actor"
+    EVENT ||--o| BUDGET : "has"
+    USER ||--o{ BUDGET : "approves"
+    EVENT ||--o{ REQUEST : "spawns"
+    COMMITTEE ||--o{ REQUEST : "owns"
+    USER ||--o{ REQUEST : "requester"
+    USER ||--o{ REQUEST : "assigned_to"
+    REQUEST ||--o{ REQUEST_STATE_TRANSITION : "logs"
+    USER ||--o{ REQUEST_STATE_TRANSITION : "actor"
+    REQUEST ||--o{ REQUEST_ASSIGNMENT_HISTORY : "logs"
+    USER ||--o{ REQUEST_ASSIGNMENT_HISTORY : "assigned by/to"
+    REQUEST ||--o{ REQUEST_ESCALATION : "may have"
+    USER ||--o{ REQUEST_ESCALATION : "raised_by / handled_by"
+
+
+    COMMITTEE {
+        uuid id PK
+        string name
+        string description
+        uuid director_id FK
+        uuid vice_director_id FK
+    }
+
+    USER {
+        uuid id PK
+        string auc_email UK
+        string auc_id UK
+        string first_name
+        string second_name
+        string role
+        uuid committee_id FK
+        bool is_active
+        datetime date_joined
+    }
+
+    EVENT {
+        uuid id PK
+        string title
+        string description
+        uuid requester_id FK
+        string current_state
+        datetime created_at
+        datetime updated_at
+    }
+
+    EVENT_STATE_TRANSITION {
+        uuid id PK
+        uuid event_id FK
+        string from_state
+        string to_state
+        string action
+        uuid actor_id FK
+        string note
+        datetime created_at
+    }
+
+    BUDGET {
+        uuid id PK
+        uuid event_id FK
+        decimal amount
+        string status
+        uuid approved_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
+    REQUEST {
+        uuid id PK
+        uuid event_id FK
+        string title
+        string description
+        uuid requester_id FK
+        uuid committee_id FK
+        uuid assigned_to_id FK
+        string current_state
+        datetime created_at
+        datetime updated_at
+    }
+
+    REQUEST_STATE_TRANSITION {
+        uuid id PK
+        uuid requester_id FK
+        string from_state
+        string to_state
+        string action
+        uuid actor_id FK
+        string note
+        datetime created_at
+    }
+
+    REQUEST_ASSIGNMENT_HISTORY {
+        uuid id PK
+        uuid request_id FK
+        uuid assigned_to_id FK
+        uuid assigned_by_id FK
+        datetime created_at
+    }
+
+    REQUEST_ESCALATION {
+        uuid id PK
+        uuid request_id FK
+        uuid raised_by_id FK
+        string reason_category
+        string description
+        string status
+        uuid handled_by_id FK
+        string resolution_note
+        datetime created_at
+        datetime resolved_at
+    }
