@@ -147,7 +147,7 @@ typings/
 .env.*
 
 # Production secrets must NEVER be committed
-.envs/.production/*
+backend/.envs/.production/
 
 # Local dev defaults (.envs/.local/) ARE safe to commit
 
