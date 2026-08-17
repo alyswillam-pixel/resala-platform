@@ -38,7 +38,11 @@ class UserManager(DjangoUserManager["User"]):
         return user
 
     def create_user(
-        self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields
+        self,
+        auc_email: str,
+        auc_id: str,
+        password: str | None = None,
+        **extra_fields,
     ):  # type: ignore[override]
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
@@ -50,7 +54,11 @@ class UserManager(DjangoUserManager["User"]):
         )
 
     def create_superuser(
-        self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields
+        self,
+        auc_email: str,
+        auc_id: str,
+        password: str | None = None,
+        **extra_fields,
     ):  # type: ignore[override]
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
