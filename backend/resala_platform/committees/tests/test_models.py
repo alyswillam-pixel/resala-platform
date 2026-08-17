@@ -1,4 +1,5 @@
 import pytest
+from django.db import IntegrityError
 
 from resala_platform.committees.models import Committee
 from resala_platform.committees.models import CommitteeRole
@@ -15,7 +16,7 @@ class TestCommittee:
 
     def test_name_is_unique(self):
         CommitteeFactory(name="Tech")
-        with pytest.raises(Exception):  # Integrity Error
+        with pytest.raises(IntegrityError):
             Committee.objects.create(name="Tech")
 
     def test_director_is_optional(self):
@@ -33,7 +34,7 @@ class TestCommitteeRole:
     def test_role_name_unique_within_commitee(self):
         committee = CommitteeFactory()
         CommitteeRoleFactory(committee=committee, name="Navigator")
-        with pytest.raises(Exception):  # Integirty Error
+        with pytest.raises(IntegrityError):
             CommitteeRole.objects.create(committee=committee, name="Navigator")
 
     def test_same_role_name_allowed_across_committee(self):

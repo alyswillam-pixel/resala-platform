@@ -1,9 +1,9 @@
 import re
-from datetime import date
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import UserManager as DjangoUserManager
+from django.utils import timezone
 
 if TYPE_CHECKING:
     from .models import User  # noqa: F401
@@ -103,7 +103,7 @@ class UserManager(DjangoUserManager["User"]):
             raise ValueError(msg)
 
         issued_year_two_digit = int(match.group(1))
-        current_year_two_digit = date.today().year % 100
+        current_year_two_digit = timezone.now().year % 100
         if issued_year_two_digit > current_year_two_digit:
             msg = "AUC ID year cannot be in the future"
             raise ValueError(msg)

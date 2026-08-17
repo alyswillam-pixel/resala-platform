@@ -14,7 +14,8 @@ router.register("users", UserViewSet)
 
 app_name = "api"
 
-urlpatterns = router.urls + [
+urlpatterns = [
+    *router.urls,
     path("auth/login/", LoginView.as_view(), name="knox_login"),
     path("auth/logout/", LogoutView.as_view(), name="knox_logout"),
     path("auth/logoutall/", LogoutAllView.as_view(), name="knox_logoutall"),

@@ -119,3 +119,38 @@ def test_login_cookie_has_fifteen_minute_lifetime(api_client, user):
     cookie = response.cookies["knox_token"]
 
     assert cookie["max-age"] == int(timedelta(minutes=15).total_seconds())
+
+
+def test_csrf_endpoint_returns_token_in_body(api_client):
+    response = api_client.get(reverse("api:csrf_token"))
+    
+    assert response.status_code == 200
+    assert "csrfToken" in response.data
+    assert isinstance(response.data["csrfToken"], str)
+    assert len(response.data["csrfToken"]) > 0
+
+
+def test_csrf_endpoint_sets_cookie(api_client):
+    response = api_client.get(reverse("api:csrf_token"))
+    
+    assert response.status_code == 200
+    assert "csrftoken" in response.cookies
+    
+    cookie = response.cookies["csrftoken"]
+    assert len(cookie.value) > 0
+
+
+def test_csrf_blocks_unauthorized_post(user):
+    csrf_client = APIClient(enforce_csrf_checks=True)
+    login_response = csrf_client.post(
+        reverse("api:knox_login"),
+        {
+            "auc_email": user.auc_email,
+            "password": "TestPassword123!",
+        },
+        format="json"
+    )
+    
+    csrf_client.cookies["knox_token"] = login_response.cookies["knox_token"].value
+    response = csrf_client.post(reverse("api:knox_logout"))
+    assert response.status_code == 403

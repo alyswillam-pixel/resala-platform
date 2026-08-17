@@ -1,8 +1,8 @@
-from datetime import date
 from io import StringIO
 
 import pytest
 from django.core.management import call_command
+from django.utils import timezone
 
 from resala_platform.users.models import User
 
@@ -46,7 +46,7 @@ class TestUserManager:
         assert user.username is None
 
     def test_create_user_rejects_non_auc_email(self):
-        with pytest.raises(ValueError, match="@aucegypt.edu"):
+        with pytest.raises(ValueError, match=r"@aucegypt\.edu"):
             User.objects.create_user(
                 auc_email="john@gmail.edu",
                 auc_id="900260004",
@@ -72,7 +72,7 @@ class TestUserManager:
 
 class TestAucIdValidation:
     def test_valid_auc_id_accepted(self):
-        current_year_two_digit = date.today().year % 100
+        current_year_two_digit = timezone.now().year % 100
         auc_id = f"900{current_year_two_digit:02d}1234"
         user = User.objects.create_user(
             auc_email="valid@aucegypt.edu",
@@ -106,7 +106,7 @@ class TestAucIdValidation:
             )
 
     def test_auc_id_rejects_future_year(self):
-        future_year_two_digit = (date.today().year + 1) % 100
+        future_year_two_digit = (timezone.now().year + 1) % 100
         auc_id = f"900{future_year_two_digit:02d}1234"
         with pytest.raises(ValueError, match="future"):
             User.objects.create_user(

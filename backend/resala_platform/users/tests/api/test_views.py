@@ -1,40 +1,56 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pytest
-from rest_framework.test import APIRequestFactory
+from django.urls import reverse
+from rest_framework.test import APIClient
 
-from resala_platform.users.api.views import UserViewSet
+from resala_platform.users.models import User
 
-if TYPE_CHECKING:
-    from resala_platform.users.models import User
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def api_client():
+    return APIClient()
+
+
+@pytest.fixture
+def other_user(db):
+    return User.objects.create_user(
+        auc_email="other@aucegypt.edu",
+        auc_id="900245558",
+        password="TestPassword123!",
+        name="Other User",
+    )
 
 
 class TestUserViewSet:
-    @pytest.fixture
-    def api_rf(self) -> APIRequestFactory:
-        return APIRequestFactory()
+    def test_user_me_endpoint_returns_current_user(self, api_client, user):
+        api_client.force_authenticate(user=user)
+        response = api_client.get(reverse("api:user-me"))
 
-    def test_get_queryset(self, user: User, api_rf: APIRequestFactory):
-        view = UserViewSet()
-        request = api_rf.get("/fake-url/")
-        request.user = user
+        assert response.status_code == 200
 
-        view.request = request
+    def test_user_cannot_list_other_users(self, api_client, user, other_user):
+        api_client.force_authenticate(user=user)
+        response = api_client.get(reverse("api:user-list"))
 
-        assert user in view.get_queryset()
+        assert response.status_code == 200
+        assert len(response.data) == 1
+        assert response.data[0]["name"] == user.name
 
-    def test_me(self, user: User, api_rf: APIRequestFactory):
-        view = UserViewSet()
-        request = api_rf.get("/fake-url/")
-        request.user = user
+    def test_user_cannot_retrieve_other_user_profile(
+        self,
+        api_client,
+        user,
+        other_user,
+    ):
+        api_client.force_authenticate(user=user)
+        url = reverse("api:user-detail", kwargs={"pk": other_user.pk})
+        response = api_client.get(url)
 
-        view.request = request
+        assert response.status_code == 404
 
-        response = view.me(request)  # type: ignore[misc,call-arg,arg-type]
-
-        assert response.data == {
-            "url": f"http://testserver/api/users/{user.pk}/",
-            "name": user.name,
-        }
+    def test_unauthenticated_requests_are_rejected(self, api_client):
+        response = api_client.get(reverse("api:user-me"))
+        assert response.status_code == 401

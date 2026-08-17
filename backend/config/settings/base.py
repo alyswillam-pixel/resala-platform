@@ -3,6 +3,7 @@
 
 import os
 import ssl
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -366,8 +367,6 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
-
-from datetime import timedelta
 
 REST_KNOX = {
     "TOKEN_TTL": timedelta(minutes=15),
