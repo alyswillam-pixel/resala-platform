@@ -25,6 +25,7 @@ dependencies = [
   "django-environ==0.14.0",
   "django-model-utils==5.0.0",
   "django-redis==7.0.0",
+  "django-rest-knox>=5.1.0",
   "djangorestframework==3.18.0",
   "drf-spectacular==0.30.0",
   "flower==2.0.1",

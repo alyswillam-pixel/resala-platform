@@ -97,6 +97,7 @@ THIRD_PARTY_APPS = [
     "rest_framework.authtoken",
     "corsheaders",
     "drf_spectacular",
+    "knox"
 ]
 
 LOCAL_APPS = [
@@ -345,8 +346,7 @@ SOCIALACCOUNT_FORMS = {"signup": "resala_platform.users.forms.UserSocialSignupFo
 # django-rest-framework - https://www.django-rest-framework.org/api-guide/settings/
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework.authentication.SessionAuthentication",
-        "rest_framework.authentication.TokenAuthentication",
+        "knox.auth.TokenAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
@@ -366,3 +366,11 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+from datetime import timedelta
+
+REST_KNOX = {
+    "TOKEN_TTL": timedelta(minutes=15),
+    "AUTO_REFRESH": True,
+    "MIN_REFRESH_INTERVAL": 60,
+}
