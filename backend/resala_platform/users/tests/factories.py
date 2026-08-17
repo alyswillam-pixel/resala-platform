@@ -14,8 +14,11 @@ class UserFactory(DjangoModelFactory[User]):
 
     @post_generation
     def password(
-        self: User, create: bool, extracted: str | None, **kwargs
-    ):  # noqa: FBT001
+        self: User,
+        create: bool,
+        extracted: str | None,
+        **kwargs,
+    ):
         password = (
             extracted
             if extracted
@@ -28,11 +31,11 @@ class UserFactory(DjangoModelFactory[User]):
                 lower_case=True,
             ).evaluate(None, None, extra={"locale": None})
         )
-        
+
         self.set_password(password)
         if create:
             self.save()
-    
+
     class Meta:
         model = User
         django_get_or_create = ["auc_id"]

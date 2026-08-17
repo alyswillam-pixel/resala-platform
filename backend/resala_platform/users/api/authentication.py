@@ -1,7 +1,5 @@
-from rest_framework import exceptions
-from rest_framework.request import Request
-
 from knox.auth import TokenAuthentication
+from rest_framework.request import Request
 
 
 class CookieTokenAuthentication(TokenAuthentication):

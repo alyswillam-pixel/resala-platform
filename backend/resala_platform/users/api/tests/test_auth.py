@@ -1,10 +1,7 @@
 from datetime import timedelta
 
 import pytest
-
-from django.conf import settings
 from django.urls import reverse
-
 from rest_framework.test import APIClient
 
 from resala_platform.users.models import User

@@ -64,7 +64,9 @@ class TestUserManager:
     def test_create_user_requires_auc_email(self):
         with pytest.raises(ValueError, match="AUC email must be set"):
             User.objects.create_user(
-                auc_email="", auc_id="900260005", password="something-r@nd0m!"
+                auc_email="",
+                auc_id="900260005",
+                password="something-r@nd0m!",
             )
 
 

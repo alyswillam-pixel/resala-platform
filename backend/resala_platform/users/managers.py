@@ -1,7 +1,6 @@
-from typing import TYPE_CHECKING
-
 import re
 from datetime import date
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import UserManager as DjangoUserManager
@@ -17,7 +16,11 @@ class UserManager(DjangoUserManager["User"]):
     """Custom manager for the User model."""
 
     def _create_user(
-        self, auc_email: str, auc_id: str, password: str | None, **extra_fields
+        self,
+        auc_email: str,
+        auc_id: str,
+        password: str | None,
+        **extra_fields,
     ):
         """
         Create and save a user with the given email and password.
@@ -34,14 +37,21 @@ class UserManager(DjangoUserManager["User"]):
         user.save(using=self._db)
         return user
 
-    def create_user(self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields):  # type: ignore[override]
+    def create_user(
+        self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields
+    ):  # type: ignore[override]
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         return self._create_user(
-            auc_email=auc_email, auc_id=auc_id, password=password, **extra_fields
+            auc_email=auc_email,
+            auc_id=auc_id,
+            password=password,
+            **extra_fields,
         )
 
-    def create_superuser(self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields):  # type: ignore[override]
+    def create_superuser(
+        self, auc_email: str, auc_id: str, password: str | None = None, **extra_fields
+    ):  # type: ignore[override]
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
@@ -53,7 +63,10 @@ class UserManager(DjangoUserManager["User"]):
             raise ValueError(msg)
 
         return self._create_user(
-            auc_email=auc_email, auc_id=auc_id, password=password, **extra_fields
+            auc_email=auc_email,
+            auc_id=auc_id,
+            password=password,
+            **extra_fields,
         )
 
     @staticmethod
@@ -69,7 +82,7 @@ class UserManager(DjangoUserManager["User"]):
         - Always starts with "900"
         - YY is the two-digit year the ID was issued in
         - NNNN is a 4-digit sequence number
-        
+
         The year portion cannot be later than the current year.
         """
         if not auc_id:
@@ -80,10 +93,9 @@ class UserManager(DjangoUserManager["User"]):
         if not match:
             msg = "AUC ID must be in the format 900<YY><NNNN> (9 digits total)"
             raise ValueError(msg)
-        
+
         issued_year_two_digit = int(match.group(1))
         current_year_two_digit = date.today().year % 100
         if issued_year_two_digit > current_year_two_digit:
             msg = "AUC ID year cannot be in the future"
             raise ValueError(msg)
-        

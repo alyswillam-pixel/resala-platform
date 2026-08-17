@@ -15,7 +15,8 @@ class TestUser:
         UserFactory(auc_id="9000001")
         with pytest.raises(Exception):
             User.objects.create(
-                auc_id="9000001", auc_email="some_different_email@aucegypt.edu"
+                auc_id="9000001",
+                auc_email="some_different_email@aucegypt.edu",
             )
 
     def test_auc_email_unique(self):

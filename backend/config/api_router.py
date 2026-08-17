@@ -1,16 +1,13 @@
 from django.conf import settings
 from django.urls import path
-from knox import views as knox_views
+from rest_framework.routers import DefaultRouter
+from rest_framework.routers import SimpleRouter
 
-from rest_framework.routers import DefaultRouter, SimpleRouter
-
-from resala_platform.users.api.views import (
-    UserViewSet,
-    LoginView,
-    LogoutView,
-    LogoutAllView,
-    CSRFTokenView,
-)
+from resala_platform.users.api.views import CSRFTokenView
+from resala_platform.users.api.views import LoginView
+from resala_platform.users.api.views import LogoutAllView
+from resala_platform.users.api.views import LogoutView
+from resala_platform.users.api.views import UserViewSet
 
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 router.register("users", UserViewSet)

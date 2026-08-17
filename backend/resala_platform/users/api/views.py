@@ -1,26 +1,24 @@
 from django.conf import settings
-
 from django.contrib.auth import authenticate
 from django.middleware.csrf import get_token
-
 from knox.views import LoginView as KnoxLoginView
-from knox.views import LogoutView as KnoxLogoutView
 from knox.views import LogoutAllView as KnoxLogoutAllView
-
+from knox.views import LogoutView as KnoxLogoutView
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.mixins import UpdateModelMixin
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.permissions import AllowAny
 
 from resala_platform.users.models import User
 
-from .serializers import UserSerializer, LoginSerializer
 from .authentication import CookieTokenAuthentication
+from .serializers import LoginSerializer
+from .serializers import UserSerializer
 
 
 class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
