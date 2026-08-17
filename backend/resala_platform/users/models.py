@@ -1,9 +1,8 @@
-
+import uuid
 from typing import ClassVar
 
 from django.contrib.auth.models import AbstractUser
-from django.db.models import CharField
-from django.db.models import EmailField
+from django.db import models
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -17,15 +16,27 @@ class User(AbstractUser):
     check forms.SignupForm and forms.SocialSignupForms accordingly.
     """
 
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+
     # First and last name do not cover name patterns around the globe
-    name = CharField(_("Name of User"), blank=True, max_length=255)
+    name = models.CharField(_("Name of User"), blank=True, max_length=255)
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
-    email = EmailField(_("email address"), unique=True)
     username = None  # type: ignore[assignment]
 
-    USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = []
+    auc_id = models.CharField(_("AUC ID"), max_length=20, unique=True, blank=False)
+    auc_email = models.EmailField(_("AUC email"), unique=True)
+    committee_role = models.ForeignKey(
+        "committees.CommitteeRole",
+        verbose_name=_("Committee Role"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="members",
+    )
+
+    USERNAME_FIELD = "auc_email"
+    REQUIRED_FIELDS = ["auc_id"]
 
     objects: ClassVar[UserManager] = UserManager()
 

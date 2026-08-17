@@ -101,7 +101,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "resala_platform.users",
-    # Your stuff: custom apps go here
+    "resala_platform.committees"
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

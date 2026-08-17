@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from factory import Faker
+import factory
 from factory import post_generation
 from factory.django import DjangoModelFactory
 
@@ -8,15 +8,18 @@ from resala_platform.users.models import User
 
 
 class UserFactory(DjangoModelFactory[User]):
-    email = Faker("email")
-    name = Faker("name")
+    auc_email = factory.Sequence(lambda n: f"user{n}@aucegypt.edu")
+    auc_id = factory.Sequence(lambda n: f"90000{n}")
+    name = factory.Faker("name")
 
     @post_generation
-    def password(self: User, create: bool, extracted: str | None, **kwargs):  # noqa: FBT001
+    def password(
+        self: User, create: bool, extracted: str | None, **kwargs
+    ):  # noqa: FBT001
         password = (
             extracted
             if extracted
-            else Faker(
+            else factory.Faker(
                 "password",
                 length=42,
                 special_chars=True,
@@ -25,11 +28,12 @@ class UserFactory(DjangoModelFactory[User]):
                 lower_case=True,
             ).evaluate(None, None, extra={"locale": None})
         )
+        
         self.set_password(password)
         if create:
             self.save()
-
+    
     class Meta:
         model = User
-        django_get_or_create = ["email"]
+        django_get_or_create = ["auc_id"]
         skip_postgeneration_save = True

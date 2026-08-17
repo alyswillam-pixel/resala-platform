@@ -1,5 +1,6 @@
 erDiagram
-    COMMITTEE ||--o{ USER : "has members"
+    COMMITTEE ||--o{ COMMITTEE_ROLE : "defines"
+    COMMITTEE_ROLE ||--o{ USER : "has members"
     COMMITTEE ||--o| USER : "director"
     COMMITTEE ||--o| USER : "vice_director"
     USER ||--o{ EVENT : "requester"
@@ -18,7 +19,6 @@ erDiagram
     REQUEST ||--o{ REQUEST_ESCALATION : "may have"
     USER ||--o{ REQUEST_ESCALATION : "raised_by / handled_by"
 
-
     COMMITTEE {
         uuid id PK
         string name
@@ -26,19 +26,22 @@ erDiagram
         uuid director_id FK
         uuid vice_director_id FK
     }
-
     USER {
         uuid id PK
+        string email
         string auc_email UK
         string auc_id UK
-        string first_name
-        string second_name
-        string role
-        uuid committee_id FK
+        string name
+        uuid committee_role_id FK
         bool is_active
         datetime date_joined
     }
-
+    COMMITTEE_ROLE {
+        uuid id PK
+        uuid committee_id FK
+        string name
+        int order
+    }
     EVENT {
         uuid id PK
         string title
@@ -48,7 +51,6 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-
     EVENT_STATE_TRANSITION {
         uuid id PK
         uuid event_id FK
@@ -59,7 +61,6 @@ erDiagram
         string note
         datetime created_at
     }
-
     BUDGET {
         uuid id PK
         uuid event_id FK
@@ -69,7 +70,6 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-
     REQUEST {
         uuid id PK
         uuid event_id FK
@@ -82,10 +82,9 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
-
     REQUEST_STATE_TRANSITION {
         uuid id PK
-        uuid requester_id FK
+        uuid request_id FK
         string from_state
         string to_state
         string action
@@ -93,7 +92,6 @@ erDiagram
         string note
         datetime created_at
     }
-
     REQUEST_ASSIGNMENT_HISTORY {
         uuid id PK
         uuid request_id FK
@@ -101,7 +99,6 @@ erDiagram
         uuid assigned_by_id FK
         datetime created_at
     }
-
     REQUEST_ESCALATION {
         uuid id PK
         uuid request_id FK
