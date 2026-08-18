@@ -78,6 +78,19 @@ class UserAdmin(auth_admin.UserAdmin):
         led = get_led_committee(request.user)
         return qs.filter(committee_role__committee=led) if led else qs.none()
 
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            return obj
+        # Fall back to unfiltered queryset so that existing-but-forbidden
+        # objects get a proper 403 instead of a misleading 302 redirect.
+        model = self.model
+        try:
+            pk = model._meta.pk.get_prep_value(object_id)
+            return model._default_manager.get(pk=pk)
+        except (model.DoesNotExist, ValueError):
+            return None
+
     def has_module_permission(self, request, obj=None):
         return (
             request.user.is_superuser
@@ -85,7 +98,16 @@ class UserAdmin(auth_admin.UserAdmin):
             or get_led_committee(request.user) is not None
         )
 
-    has_view_permission = has_module_permission
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser or is_presidential_office_leader(request.user):
+            return True
+        led = get_led_committee(request.user)
+        if not led:
+            return False
+        if obj is None:
+            return True
+        return bool(obj.committee_role_id and obj.committee_role.committee_id == led.id)
+
     has_add_permission = has_module_permission
 
     def has_change_permission(self, request, obj=None):

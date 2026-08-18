@@ -40,6 +40,21 @@ class CommitteeRoleAdmin(admin.ModelAdmin):
         led = get_led_committee(request.user)
         return qs.filter(committee=led) if led else qs.none()
 
+    def get_object(self, request, object_id, from_field=None):
+        # Try the scoped queryset first (covers the normal case).
+        obj = super().get_object(request, object_id, from_field)
+        if obj is not None:
+            return obj
+        # Fall back to the unfiltered queryset so that existing-but-forbidden
+        # objects are returned and properly rejected by has_*_permission (403)
+        # instead of silently treated as "not found" (302 redirect).
+        model = self.model
+        try:
+            pk = model._meta.pk.get_prep_value(object_id)
+            return model._default_manager.get(pk=pk)
+        except (model.DoesNotExist, ValueError):
+            return None
+
     def has_module_permission(self, request, obj=None):
         return (
             request.user.is_superuser
@@ -47,7 +62,13 @@ class CommitteeRoleAdmin(admin.ModelAdmin):
             or get_led_committee(request.user) is not None
         )
 
-    has_view_permission = has_add_permission = has_module_permission
+    has_add_permission = has_module_permission
+
+    def has_view_permission(self, request, obj=None):
+        if request.user.is_superuser or is_presidential_office_leader(request.user):
+            return True
+        led = get_led_committee(request.user)
+        return bool(led) and (obj is None or obj.committee_id == led.id)
 
     def has_change_permission(self, request, obj=None):
         if request.user.is_superuser or is_presidential_office_leader(request.user):
