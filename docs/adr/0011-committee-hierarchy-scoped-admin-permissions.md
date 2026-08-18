@@ -94,4 +94,6 @@ see later.
   not adopted — would solve the row-level scoping problem more generically, 
   but adds a new dependency and its own permission-assignment bookkeeping
   for a hierarchy simple enough (two tiers, one FK-based leadership check)
-  to express directly in `ModelAdmin` methods without it.
+  to express directly in `ModelAdmin` methods without it. This level of
+  complexity is momentarily not required since privilages can currently be
+  computed via model's own field.
