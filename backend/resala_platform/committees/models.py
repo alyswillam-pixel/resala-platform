@@ -25,6 +25,19 @@ class Committee(models.Model):
         related_name="vice_directed_committees",
     )
 
+    is_presidential_office = models.BooleanField(
+        _("Is Presidential Office"),
+        default=False,
+    )
+
+    def clean(self):
+        if self.is_presidential_office:
+            conflict = Committee.objects.filter(is_presidential_office=True).exclude(
+                pk=self.pk,
+            )
+            if conflict.exists():
+                ValidationError(_("Only one committee may be the Presidential Office."))
+
     class Meta:
         verbose_name = _("Committee")
         verbose_name_plural = _("Committees")

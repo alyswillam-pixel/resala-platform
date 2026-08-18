@@ -10,7 +10,7 @@ from .models import User
 class UserAdminChangeForm(admin_forms.UserChangeForm):
     class Meta(admin_forms.UserChangeForm.Meta):
         model = User
-        field_classes = {"email": EmailField}
+        field_classes = {"auc_email": EmailField}
 
 
 class UserAdminCreationForm(admin_forms.AdminUserCreationForm):
@@ -21,10 +21,10 @@ class UserAdminCreationForm(admin_forms.AdminUserCreationForm):
 
     class Meta(admin_forms.UserCreationForm.Meta):
         model = User
-        fields = ("email",)
-        field_classes = {"email": EmailField}
+        fields = ("auc_email", "auc_id", "committee_role")
+        field_classes = {"auc_email": EmailField}
         error_messages = {
-            "email": {"unique": _("This email has already been taken.")},
+            "auc_email": {"unique": _("This email has already been taken.")},
         }
 
 
