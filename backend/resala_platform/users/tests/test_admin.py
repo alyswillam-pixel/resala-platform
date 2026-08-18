@@ -30,16 +30,15 @@ class TestUserAdmin:
         response = admin_client.post(
             url,
             data={
-                "email": "new-admin@example.com",
-                "password1": "My_R@ndom-P@ssw0rd",
-                "password2": "My_R@ndom-P@ssw0rd",
+                "auc_email": "new-admin@aucegypt.edu",
+                "auc_id": "900991234",
             },
         )
         assert response.status_code == HTTPStatus.FOUND
-        assert User.objects.filter(email="new-admin@example.com").exists()
+        assert User.objects.filter(auc_email="new-admin@aucegypt.edu").exists()
 
     def test_view_user(self, admin_client):
-        user = User.objects.get(email="admin@example.com")
+        user = User.objects.get(auc_email="admin@aucegypt.edu")
         url = reverse("admin:users_user_change", kwargs={"object_id": user.pk})
         response = admin_client.get(url)
         assert response.status_code == HTTPStatus.OK

@@ -18,3 +18,12 @@ def _media_storage(settings, tmpdir) -> None:
 @pytest.fixture
 def user(db) -> User:
     return UserFactory.create()
+
+
+@pytest.fixture
+def admin_user(db, django_user_model):
+    return django_user_model.objects.create_superuser(
+        auc_email="admin@aucegypt.edu",
+        auc_id="900000000",
+        password="password",
+    )
