@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import admin as auth_admin
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
 from resala_platform.committees.models import CommitteeRole
@@ -12,6 +13,7 @@ from resala_platform.committees.permissions import is_presidential_office_leader
 from .forms import UserAdminChangeForm
 from .forms import UserAdminCreationForm
 from .models import User
+from .tasks import send_password_setup_email
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
@@ -54,8 +56,6 @@ class UserAdmin(auth_admin.UserAdmin):
                     "auc_email",
                     "auc_id",
                     "committee_role",
-                    "password1",
-                    "password2",
                 ),
             },
         ),
@@ -88,7 +88,7 @@ class UserAdmin(auth_admin.UserAdmin):
         try:
             pk = model._meta.pk.get_prep_value(object_id)
             return model._default_manager.get(pk=pk)
-        except (model.DoesNotExist, ValueError):
+        except model.DoesNotExist, ValueError:
             return None
 
     def has_module_permission(self, request, obj=None):
@@ -160,6 +160,8 @@ class UserAdmin(auth_admin.UserAdmin):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def save_model(self, request, obj, form, change):
+        is_new = not change
+
         if not (
             request.user.is_superuser or is_presidential_office_leader(request.user)
         ):
@@ -170,4 +172,15 @@ class UserAdmin(auth_admin.UserAdmin):
                     "You may only manage users within your own committee",
                 )
 
+        if is_new:
+            obj.set_unusable_password()
+
         super().save_model(request, obj, form, change)
+
+        # Fire celery to send email after transaction commits.
+        # ATOMIC_REQUESTS wraps the request in a transaction, so the user
+        # row isn't visible to the worker until the transaction commits.
+        if is_new:
+            transaction.on_commit(
+                lambda: send_password_setup_email(obj.pk, purpose="new_account"),
+            )

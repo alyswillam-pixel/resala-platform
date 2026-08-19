@@ -1,60 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', monospace;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  /* Blue & White Palette */
+  --ink: #0B192C;
+  --ink-card: rgba(15, 23, 42, 0.85);
+  --ink-card-glass: rgba(15, 23, 42, 0.75);
+  
+  --purple-main: #1D4ED8;     /* Swapped to Royal Blue */
+  --purple-bright: #2563EB;   /* Swapped to Bright Blue */
+  --purple-glow: rgba(37, 99, 235, 0.35);
+  --gold-accent: #38BDF8;     /* Swapped to Sky Blue Accent */
+  
+  --blue-main: #1D4ED8;
+  --blue-bright: #2563EB;
+  --blue-light: #0284C7;
+  --sky-accent: #38BDF8;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  --lavender-bg: #F0F7FF;     /* Ice Blue background */
+  --lavender-card: #FFFFFF;
+  --lavender-border: #D1E5F8;
+  
+  --text-dark: #0F172A;
+  --text-dark-muted: #475569;
+  --text-light: #F8FAFC;
+  --text-light-muted: #94A3B8;
+
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --radius-pill: 9999px;
+  --shadow-glow: 0 10px 30px -5px rgba(37, 99, 235, 0.25);
+  --shadow-soft: 0 12px 32px -8px rgba(11, 25, 44, 0.08);
+
+  font-family: var(--font-sans);
   color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   margin: 0;
+  padding: 0;
+  background-color: var(--lavender-bg);
+  color: var(--text-dark);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-#root {
-    min-height: 100svh;
+/* Animations */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translate(-50%, 0%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -8%) scale(1.05);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.5);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(11, 25, 44, 0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--blue-bright);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--blue-main);
+}

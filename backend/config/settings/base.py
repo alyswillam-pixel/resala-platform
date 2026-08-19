@@ -373,4 +373,8 @@ REST_KNOX = {
     "TOKEN_TTL": timedelta(minutes=15),
     "AUTO_REFRESH": True,
     "MIN_REFRESH_INTERVAL": 60,
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"anon": "5/hour"},
 }
+
+FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:5173")

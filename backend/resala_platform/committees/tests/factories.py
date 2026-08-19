@@ -1,9 +1,9 @@
 import factory
 from factory.django import DjangoModelFactory
 
-from resala_platform.committees.models import Committee, CommitteeRole
+from resala_platform.committees.models import Committee
+from resala_platform.committees.models import CommitteeRole
 from resala_platform.users.models import User
-
 
 PASSWORD = "TestPassword123!"
 
@@ -19,13 +19,11 @@ class UserFactory(DjangoModelFactory):
     def _create(cls, model_class, *args, **kwargs):
         password = kwargs.pop("password", PASSWORD)
 
-        user = model_class.objects.create_user(
+        return model_class.objects.create_user(
             *args,
             password=password,
             **kwargs,
         )
-
-        return user
 
     class Meta:
         model = User
@@ -42,13 +40,11 @@ class SuperUserFactory(UserFactory):
     def _create(cls, model_class, *args, **kwargs):
         password = kwargs.pop("password", PASSWORD)
 
-        user = model_class.objects.create_superuser(
+        return model_class.objects.create_superuser(
             *args,
             password=password,
             **kwargs,
         )
-
-        return user
 
 
 class CommitteeFactory(DjangoModelFactory[Committee]):

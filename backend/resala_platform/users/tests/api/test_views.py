@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from http import HTTPStatus
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
@@ -29,13 +31,13 @@ class TestUserViewSet:
         api_client.force_authenticate(user=user)
         response = api_client.get(reverse("api:user-me"))
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     def test_user_cannot_list_other_users(self, api_client, user, other_user):
         api_client.force_authenticate(user=user)
         response = api_client.get(reverse("api:user-list"))
 
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         assert len(response.data) == 1
         assert response.data[0]["name"] == user.name
 
@@ -49,8 +51,8 @@ class TestUserViewSet:
         url = reverse("api:user-detail", kwargs={"pk": other_user.pk})
         response = api_client.get(url)
 
-        assert response.status_code == 404
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     def test_unauthenticated_requests_are_rejected(self, api_client):
         response = api_client.get(reverse("api:user-me"))
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED

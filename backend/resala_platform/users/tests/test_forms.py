@@ -20,7 +20,7 @@ class TestUserAdminCreationForm:
     def test_username_validation_error_msg(self, user: User):
         """
         Tests UserAdminCreation Form's unique validator functions correctly by testing:
-            1) A new user with an existing username cannot be added.
+            1) A new user with an existing auc_email cannot be added.
             2) Only 1 error is raised by the UserCreation Form
             3) The desired error message is raised
         """
@@ -29,13 +29,12 @@ class TestUserAdminCreationForm:
         # hence cannot be created.
         form = UserAdminCreationForm(
             {
-                "email": user.email,
-                "password1": user.password,
-                "password2": user.password,
+                "auc_email": user.auc_email,
+                "auc_id": "111111111",
             },
         )
 
         assert not form.is_valid()
         assert len(form.errors) == 1
-        assert "email" in form.errors
-        assert form.errors["email"][0] == _("This email has already been taken.")
+        assert "auc_email" in form.errors
+        assert form.errors["auc_email"][0] == _("This email has already been taken.")

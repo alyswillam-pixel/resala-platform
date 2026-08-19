@@ -1,19 +1,60 @@
 import React, { useState } from "react";
-import { Calendar, PlusCircle, LayoutDashboard, CheckCircle2 } from "lucide-react";
+import { Calendar, PlusCircle, LayoutDashboard, CheckCircle2, User, LogOut, Sparkles } from "lucide-react";
+import CreateEvent from "../components/CreateEvent";
+import MyEvents from "../components/MyEvents";
+import CommitteeDashboard from "../components/CommitteeDashboard";
+import ApprovalsQueue from "../components/ApprovalsQueue";
 
 const PLANNER_TABS = [
   { key: "events", label: "My events", icon: Calendar },
   { key: "create", label: "Create event", icon: PlusCircle },
-];
-
-const COMMITTEE_TABS = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "approvals", label: "Approvals", icon: CheckCircle2 },
 ];
 
-export default function ResalaHome() {
-  // TEMPORARY — until real auth is wired, this stands in for "who's logged in"
-  const [role, setRole] = useState("planner"); // "planner" | "committee_member"
+const COMMITTEE_TABS = [
+  { key: "dashboard", label: "My Assigned Tasks", icon: LayoutDashboard },
+  { key: "approvals", label: "Planner Approvals Queue", icon: CheckCircle2 },
+];
+
+const INITIAL_SHARED_TASKS = [
+  {
+    id: 1,
+    title: "Design Instagram Banner & Story Poster",
+    eventTitle: "Blood Drive Marathon",
+    committee: "Branding",
+    assignedTo: "Branding Team (Karim & Huda)",
+    budget: 3500,
+    status: "Waiting for Planner Approval",
+    submittedAt: "Today at 2:15 PM",
+    notes: "Created 3 Instagram story variants and 1 printable A3 campus flyer."
+  },
+  {
+    id: 2,
+    title: "Build Registration Landing Page & QR Form",
+    eventTitle: "Children's Day Festival 2026",
+    committee: "Tech",
+    assignedTo: "Tech Team (Omar & Youssef)",
+    budget: 5000,
+    status: "Waiting for Planner Approval",
+    submittedAt: "Yesterday at 6:30 PM",
+    notes: "Web registration form connected to volunteer database with QR check-in generation."
+  },
+  {
+    id: 3,
+    title: "Print Roll-Up Banners & 200 Volunteer T-Shirts",
+    eventTitle: "Ramadan Food Packs Distribution",
+    committee: "Operations",
+    assignedTo: "Logistics Team (Ahmed & Mostafa)",
+    budget: 18500,
+    status: "In Progress",
+    submittedAt: "2 days ago",
+    notes: "Working with printing vendor in Dokki for t-shirt proofs and banners."
+  }
+];
+
+export default function ResalaHome({ userAuth, onNavigateToLogin }) {
+  const [role, setRole] = useState(userAuth?.role || "planner"); // "planner" | "committee_member"
+  const [tasks, setTasks] = useState(INITIAL_SHARED_TASKS);
   const tabs = role === "planner" ? PLANNER_TABS : COMMITTEE_TABS;
   const [activeTab, setActiveTab] = useState(tabs[0].key);
 
@@ -23,178 +64,242 @@ export default function ResalaHome() {
     setActiveTab(nextTabs[0].key);
   }
 
+  const handleApproveTask = (id) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: "Approved" } : t))
+    );
+  };
+
+  const handleDenyTask = (id) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: "Revision Requested" } : t))
+    );
+  };
+
+  const handleEditTask = (updatedTask) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === updatedTask.id ? updatedTask : t))
+    );
+  };
+
+  const handleSubmitTaskForApproval = (id) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: "Waiting for Planner Approval" } : t))
+    );
+  };
+
   return (
     <div className="rh-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
-
         .rh-root {
-          --ink: #150C24;
-          --purple: #5B2A86;
-          --purple-bright: #8B4FD1;
-          --lavender: #F3EDFB;
-          --lavender-line: #E4D6F5;
-          --gold: #E3AE4E;
-          --text-hi: #F7F3FE;
-          --text-mid: #C9BADD;
-          --text-on-light: #372350;
-          --text-on-light-mid: #6C5A85;
-          font-family: 'Inter', sans-serif;
           min-height: 100vh;
           width: 100%;
-          background: var(--lavender);
+          background-color: var(--lavender-bg);
+          color: var(--text-dark);
+          font-family: var(--font-sans);
         }
-        .rh-root * { box-sizing: border-box; }
-        .rh-mono { font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; }
-        .rh-display { font-family: 'Fraunces', serif; }
 
+        /* Top Dev Switcher Bar */
         .rh-devbar {
-          background: #2A1B42;
-          color: var(--text-mid);
+          background: #0F172A;
+          color: var(--text-light-muted);
           font-size: 12px;
-          padding: 8px 6vw;
+          font-family: var(--font-mono);
+          padding: 10px 4vw;
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
         }
-        .rh-devbar button {
+        .rh-devbar-btn {
           font-size: 11.5px;
           font-weight: 600;
-          padding: 5px 12px;
+          padding: 4px 14px;
           border-radius: 100px;
-          border: 1px solid rgba(247,243,254,0.25);
+          border: 1px solid rgba(255,255,255,0.2);
           background: transparent;
-          color: var(--text-mid);
+          color: var(--text-light-muted);
           cursor: pointer;
+          transition: all 0.2s ease;
         }
-        .rh-devbar button.active { background: var(--text-hi); color: var(--ink); border-color: var(--text-hi); }
+        .rh-devbar-btn.active {
+          background: var(--purple-bright);
+          color: #ffffff;
+          border-color: var(--purple-bright);
+          box-shadow: 0 0 12px rgba(139, 79, 209, 0.4);
+        }
 
-        .rh-topnav {
-          background: var(--ink);
-          padding: 20px 6vw 0;
+        /* Glassmorphic Navbar Header */
+        .rh-header-wrap {
+          background: #0F172A;
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          box-shadow: 0 10px 30px rgba(15, 8, 29, 0.4);
         }
-        .rh-topnav-row {
+        .rh-header {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 22px 24px 0;
+        }
+
+        .rh-top-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 22px;
+          margin-bottom: 24px;
         }
         .rh-brand {
-          display: flex; align-items: center; gap: 10px;
-          color: var(--text-hi); font-size: 15px; font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: var(--text-light);
+          font-size: 18px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
         }
         .rh-brand-mark {
-          width: 26px; height: 26px; border-radius: 7px;
-          background: linear-gradient(135deg, var(--purple-bright), var(--purple));
-          display: flex; align-items: center; justify-content: center;
-          font-family: 'Fraunces', serif; color: var(--text-hi); font-size: 15px;
-        }
-        .rh-role-badge {
-          font-size: 11px;
-          color: var(--text-mid);
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, var(--purple-bright), var(--purple-main));
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: var(--font-display);
+          color: var(--text-light);
+          font-size: 18px;
+          box-shadow: 0 4px 14px rgba(139, 79, 209, 0.4);
         }
 
-        .rh-tabs { display: flex; gap: 4px; }
-        .rh-tab {
-          display: flex; align-items: center; gap: 7px;
-          padding: 12px 18px;
-          font-size: 13.5px;
+        .rh-user-badge {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.12);
+          padding: 6px 14px;
+          border-radius: 100px;
+          color: var(--text-light);
+          font-size: 12.5px;
           font-weight: 600;
-          color: var(--text-mid);
+        }
+
+        /* Centered Tabs */
+        .rh-tabs-nav {
+          display: flex;
+          gap: 8px;
+          border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .rh-tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 14px 22px;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text-light-muted);
           background: transparent;
           border: none;
-          border-bottom: 2px solid transparent;
+          border-bottom: 3px solid transparent;
           cursor: pointer;
+          transition: all 0.2s ease;
         }
-        .rh-tab.active { color: var(--text-hi); border-bottom-color: var(--gold); }
-        .rh-tab:hover:not(.active) { color: var(--text-hi); }
-        .rh-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-
-        .rh-content { padding: 48px 6vw 80px; }
-        .rh-kicker { font-size: 11.5px; color: var(--text-on-light-mid); margin-bottom: 10px; }
-        .rh-h1 { font-family: 'Fraunces', serif; font-size: 30px; color: var(--text-on-light); margin: 0 0 8px; }
-        .rh-sub { font-size: 14.5px; color: var(--text-on-light-mid); margin-bottom: 34px; max-width: 480px; line-height: 1.6; }
-
-        .rh-placeholder {
-          background: #fff;
-          border: 1px dashed var(--lavender-line);
-          border-radius: 16px;
-          padding: 60px 30px;
-          text-align: center;
-          color: var(--text-on-light-mid);
-          font-size: 14px;
+        .rh-tab-btn:hover:not(.active) {
+          color: var(--text-light);
+        }
+        .rh-tab-btn.active {
+          color: var(--text-light);
+          border-bottom-color: var(--gold-accent);
         }
 
-        @media (max-width: 640px) {
-          .rh-topnav-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-          .rh-tabs { overflow-x: auto; width: 100%; }
+        /* Main Centered Content Container */
+        .rh-main-container {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 40px 24px 80px;
         }
       `}</style>
 
-      {/* DEV-ONLY role switcher — remove once real auth decides this */}
-      <div className="rh-devbar rh-mono">
-        Preview as:
-        <button className={role === "planner" ? "active" : ""} onClick={() => switchRole("planner")}>Planner</button>
-        <button className={role === "committee_member" ? "active" : ""} onClick={() => switchRole("committee_member")}>Committee member</button>
+      {/* Dev preview bar */}
+      <div className="rh-devbar">
+        <span><Sparkles size={13} style={{ display: "inline", marginRight: "4px" }} /> Preview Role:</span>
+        <button className={`rh-devbar-btn ${role === "planner" ? "active" : ""}`} onClick={() => switchRole("planner")}>
+          Event Planner
+        </button>
+        <button className={`rh-devbar-btn ${role === "committee_member" ? "active" : ""}`} onClick={() => switchRole("committee_member")}>
+          Committee Member
+        </button>
+        {onNavigateToLogin && (
+          <button className="rh-devbar-btn" style={{ marginLeft: "auto" }} onClick={onNavigateToLogin}>
+            <LogOut size={12} style={{ display: "inline", marginRight: "4px" }} /> Go to Login Page
+          </button>
+        )}
       </div>
 
-      <div className="rh-topnav">
-        <div className="rh-topnav-row">
-          <div className="rh-brand">
-            <span className="rh-brand-mark">R</span>
-            Resala Platform
+      {/* Main Glass Header */}
+      <div className="rh-header-wrap">
+        <header className="rh-header">
+          <div className="rh-top-row">
+            <div className="rh-brand">
+              <span className="rh-brand-mark">R</span>
+              Resala Platform
+            </div>
+
+            <div className="rh-user-badge">
+              <User size={14} color="var(--gold-accent)" />
+              <span>{role === "planner" ? "Event Planner Workspace" : "Committee Member Workspace"}</span>
+            </div>
           </div>
-          <div className="rh-role-badge rh-mono">
-            {role === "planner" ? "Signed in · Planner" : "Signed in · Operations"}
-          </div>
-        </div>
-        <div className="rh-tabs">
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              className={`rh-tab ${activeTab === key ? "active" : ""}`}
-              onClick={() => setActiveTab(key)}
-            >
-              <Icon size={15} /> {label}
-            </button>
-          ))}
-        </div>
+
+          <nav className="rh-tabs-nav">
+            {tabs.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                className={`rh-tab-btn ${activeTab === key ? "active" : ""}`}
+                onClick={() => setActiveTab(key)}
+              >
+                <Icon size={16} /> {label}
+              </button>
+            ))}
+          </nav>
+        </header>
       </div>
 
-      <div className="rh-content">
+      {/* Centered Content Body */}
+      <main className="rh-main-container">
         {role === "planner" && activeTab === "events" && (
-          <>
-            <div className="rh-kicker rh-mono">Your events</div>
-            <h1 className="rh-h1">My events</h1>
-            <p className="rh-sub">Every event you've created, and where each one stands.</p>
-            <div className="rh-placeholder">Event list goes here — connects once the backend's ready.</div>
-          </>
+          <MyEvents onNavigateToCreate={() => setActiveTab("create")} />
         )}
         {role === "planner" && activeTab === "create" && (
-          <>
-            <div className="rh-kicker rh-mono">New event</div>
-            <h1 className="rh-h1">Create event</h1>
-            <p className="rh-sub">Answer the five required questions and set a budget.</p>
-            <div className="rh-placeholder">Create-event form goes here.</div>
-          </>
+          <CreateEvent />
         )}
+        {role === "planner" && activeTab === "approvals" && (
+          <ApprovalsQueue
+            tasks={tasks}
+            onApproveTask={handleApproveTask}
+            onDenyTask={handleDenyTask}
+            onEditTask={handleEditTask}
+            role={role}
+          />
+        )}
+
         {role === "committee_member" && activeTab === "dashboard" && (
-          <>
-            <div className="rh-kicker rh-mono">Incoming work</div>
-            <h1 className="rh-h1">Dashboard</h1>
-            <p className="rh-sub">Requests routed to your committee, and their status.</p>
-            <div className="rh-placeholder">Committee request list goes here.</div>
-          </>
+          <CommitteeDashboard
+            tasks={tasks}
+            onSubmitForApproval={handleSubmitTaskForApproval}
+          />
         )}
         {role === "committee_member" && activeTab === "approvals" && (
-          <>
-            <div className="rh-kicker rh-mono">Awaiting sign-off</div>
-            <h1 className="rh-h1">Approvals</h1>
-            <p className="rh-sub">Requests waiting for the planner's approval before moving on.</p>
-            <div className="rh-placeholder">Approval queue goes here.</div>
-          </>
+          <ApprovalsQueue
+            tasks={tasks}
+            onApproveTask={handleApproveTask}
+            onDenyTask={handleDenyTask}
+            onEditTask={handleEditTask}
+            role={role}
+          />
         )}
-      </div>
+      </main>
     </div>
   );
 }

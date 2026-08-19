@@ -25,15 +25,17 @@ erDiagram
         string description
         uuid director_id FK
         uuid vice_director_id FK
+        bool is_presidential_office
     }
     USER {
         uuid id PK
-        string email
         string auc_email UK
         string auc_id UK
         string name
         uuid committee_role_id FK
         bool is_active
+        bool is_staff
+        bool is_superuser
         datetime date_joined
     }
     COMMITTEE_ROLE {
