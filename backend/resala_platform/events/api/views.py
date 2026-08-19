@@ -1,34 +1,55 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_fsm import TransitionNotAllowed
+from rest_framework.exceptions import PermissionDenied
+from django_fsm import TransitionNotAllowed, has_transition_perm, can_proceed
 
-from resala_platform.events.models import Event, Budget, Request, RequestEscalation
-from .serializers import (
-    EventSerializer,
-    BudgetSerializer,
-    RequestSerializer,
-    RequestEscalationSerializer,
-)
+from resala_platform.events.models import Event, Budget, EventStateTransition
+from .serializers import EventSerializer, BudgetSerializer
+
 
 class BaseWorkflowViewSet(viewsets.ModelViewSet):
     """
-    A base ViewSet to handle repetitive FSM transition logic.
+    A base ViewSet to handle repetitive FSM transition logic, authorization,
+    and audit logging.
     """
     def perform_transition(self, transition_name):
         instance = self.get_object()
         try:
-            # Dynamically fetch and call the FSM transition method
             transition_method = getattr(instance, transition_name)
-            transition_method()
+            
+            # 1. Check if transition is valid for the current state first (returns 400)
+            if not can_proceed(transition_method):
+                return Response(
+                    {"error": f"Transition '{transition_name}' not allowed from current state."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # 2. Enforce Authorization (returns 403)
+            if not has_transition_perm(transition_method, self.request.user):
+                return Response(
+                    {"error": "You do not have permission to perform this state transition."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            old_state = instance.current_state
+            
+            # 3. Execute transition (passing the user so the Budget model can log the approver)
+            try:
+                transition_method(by_user=self.request.user)
+            except TypeError:
+                transition_method()
             instance.save()
+            new_state = instance.current_state
             
-            # Note: In a production app, you would also create the 
-            # StateTransition log record here.
-            
-            # Determine which state field was updated to return dynamically
-            state_field = "status" if hasattr(instance, "status") else "current_state"
-            new_state = getattr(instance, state_field)
+            # 4. Create the StateTransition log record
+            EventStateTransition.objects.create(
+                event=instance,
+                from_state=old_state,
+                to_state=new_state,
+                action=transition_name,
+                actor=self.request.user
+            )
             
             return Response(
                 {"status": "Transition successful", "new_state": new_state},
@@ -43,6 +64,9 @@ class BaseWorkflowViewSet(viewsets.ModelViewSet):
 class EventViewSet(BaseWorkflowViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    
+    def perform_create(self, serializer):
+        serializer.save(requester=self.request.user)
 
     @action(detail=True, methods=["post"])
     def submit_for_budget_review(self, request, pk=None):
@@ -80,42 +104,30 @@ class EventViewSet(BaseWorkflowViewSet):
     def complete_event(self, request, pk=None):
         return self.perform_transition("complete_event")
 
+
 class BudgetViewSet(viewsets.ModelViewSet):
+    """
+    Exposes full CRUD, but strictly isolated so users can only touch 
+    budgets linked to their own Draft events.
+    """
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
 
-class RequestViewSet(BaseWorkflowViewSet):
-    queryset = Request.objects.all()
-    serializer_class = RequestSerializer
+    def perform_create(self, serializer):
+        event = serializer.validated_data['event']
+        if event.requester != self.request.user:
+            raise PermissionDenied("You can only create a budget for your own events.")
+        if hasattr(event, 'budget'):
+            raise PermissionDenied("This event already has a budget.")
+        serializer.save()
 
-    @action(detail=True, methods=["post"])
-    def submit_request(self, request, pk=None):
-        return self.perform_transition("submit_request")
+    def perform_update(self, serializer):
+        event = serializer.instance.event
+        if event.requester != self.request.user or event.current_state != 'Draft':
+            raise PermissionDenied("You can only modify budgets for your own draft events.")
+        serializer.save()
 
-    @action(detail=True, methods=["post"])
-    def begin_review(self, request, pk=None):
-        return self.perform_transition("begin_review")
-
-    @action(detail=True, methods=["post"])
-    def approve_request(self, request, pk=None):
-        return self.perform_transition("approve_request")
-
-    @action(detail=True, methods=["post"])
-    def reject_request(self, request, pk=None):
-        return self.perform_transition("reject_request")
-
-class RequestEscalationViewSet(BaseWorkflowViewSet):
-    queryset = RequestEscalation.objects.all()
-    serializer_class = RequestEscalationSerializer
-
-    @action(detail=True, methods=["post"])
-    def review_escalation(self, request, pk=None):
-        return self.perform_transition("review_escalation")
-
-    @action(detail=True, methods=["post"])
-    def resolve_escalation(self, request, pk=None):
-        return self.perform_transition("resolve_escalation")
-
-    @action(detail=True, methods=["post"])
-    def dismiss_escalation(self, request, pk=None):
-        return self.perform_transition("dismiss_escalation")
+    def perform_destroy(self, instance):
+        if instance.event.requester != self.request.user or instance.event.current_state != 'Draft':
+            raise PermissionDenied("You can only delete budgets for your own draft events.")
+        instance.delete()
