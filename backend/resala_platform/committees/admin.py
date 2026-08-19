@@ -52,7 +52,7 @@ class CommitteeRoleAdmin(admin.ModelAdmin):
         try:
             pk = model._meta.pk.get_prep_value(object_id)
             return model._default_manager.get(pk=pk)
-        except (model.DoesNotExist, ValueError):
+        except model.DoesNotExist, ValueError:
             return None
 
     def has_module_permission(self, request, obj=None):

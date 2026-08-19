@@ -5,15 +5,15 @@ from django.test import Client
 from django.urls import reverse
 
 from resala_platform.committees.models import CommitteeRole
-from resala_platform.users.models import User
+from resala_platform.committees.tests.factories import PASSWORD
+from resala_platform.committees.tests.factories import CommitteeFactory
+from resala_platform.committees.tests.factories import CommitteeRoleFactory
 from resala_platform.committees.tests.factories import (
-    PASSWORD,
-    UserFactory,
-    SuperUserFactory,
-    CommitteeFactory,
     PresidentialOfficeCommitteeFactory,
-    CommitteeRoleFactory,
 )
+from resala_platform.committees.tests.factories import SuperUserFactory
+from resala_platform.committees.tests.factories import UserFactory
+from resala_platform.users.models import User
 
 pytestmark = pytest.mark.django_db
 
@@ -59,7 +59,9 @@ def tech_director(tech_committee):
 @pytest.fixture
 def ops_director(ops_committee):
     user = UserFactory(
-        auc_email="mariam@aucegypt.edu", auc_id="900000004", name="Mariam"
+        auc_email="mariam@aucegypt.edu",
+        auc_id="900000004",
+        name="Mariam",
     )
     ops_committee.director = user
     ops_committee.save()
@@ -154,7 +156,10 @@ class TestCommitteeAdminPresidentialOffice:
 
 class TestCommitteeRoleAdminScoping:
     def test_tech_director_changelist_excludes_other_committees_roles(
-        self, tech_director, tech_role, ops_role
+        self,
+        tech_director,
+        tech_role,
+        ops_role,
     ):
         client = login(tech_director.auc_email)
         response = client.get(reverse("admin:committees_committeerole_changelist"))
@@ -167,21 +172,25 @@ class TestCommitteeRoleAdminScoping:
     def test_tech_director_can_view_own_role(self, tech_director, tech_role):
         client = login(tech_director.auc_email)
         response = client.get(
-            reverse("admin:committees_committeerole_change", args=[tech_role.pk])
+            reverse("admin:committees_committeerole_change", args=[tech_role.pk]),
         )
         assert response.status_code == HTTPStatus.OK
 
     def test_tech_director_cannot_view_other_committees_role(
-        self, tech_director, ops_role
+        self,
+        tech_director,
+        ops_role,
     ):
         client = login(tech_director.auc_email)
         response = client.get(
-            reverse("admin:committees_committeerole_change", args=[ops_role.pk])
+            reverse("admin:committees_committeerole_change", args=[ops_role.pk]),
         )
         assert response.status_code == HTTPStatus.FORBIDDEN
 
     def test_tech_director_can_create_role_in_own_committee(
-        self, tech_director, tech_committee
+        self,
+        tech_director,
+        tech_committee,
     ):
         client = login(tech_director.auc_email)
         response = client.post(
@@ -189,12 +198,15 @@ class TestCommitteeRoleAdminScoping:
             {"committee": str(tech_committee.pk), "name": "Verifier", "order": 2},
         )
         assert CommitteeRole.objects.filter(
-            committee=tech_committee, name="Verifier"
+            committee=tech_committee,
+            name="Verifier",
         ).exists()
         assert response.status_code in (HTTPStatus.FOUND, HTTPStatus.OK)
 
     def test_tech_director_cannot_create_role_in_other_committee(
-        self, tech_director, ops_committee
+        self,
+        tech_director,
+        ops_committee,
     ):
         client = login(tech_director.auc_email)
         response = client.post(
@@ -211,7 +223,10 @@ class TestCommitteeRoleAdminScoping:
         assert not CommitteeRole.objects.filter(name="Smuggled role").exists()
 
     def test_tech_director_add_form_only_offers_own_committee(
-        self, tech_director, tech_committee, ops_committee
+        self,
+        tech_director,
+        tech_committee,
+        ops_committee,
     ):
         client = login(tech_director.auc_email)
         response = client.get(reverse("admin:committees_committeerole_add"))
@@ -222,7 +237,11 @@ class TestCommitteeRoleAdminScoping:
 
 class TestUserAdminScoping:
     def test_tech_director_user_changelist_excludes_other_committees_members(
-        self, tech_director, tech_member, tech_role, ops_role
+        self,
+        tech_director,
+        tech_member,
+        tech_role,
+        ops_role,
     ):
         other_member = UserFactory(
             auc_email="other@aucegypt.edu",
@@ -238,7 +257,9 @@ class TestUserAdminScoping:
         assert other_member not in object_list
 
     def test_tech_director_cannot_view_user_from_other_committee(
-        self, tech_director, ops_role
+        self,
+        tech_director,
+        ops_role,
     ):
         other_member = UserFactory(
             auc_email="other2@aucegypt.edu",
@@ -249,12 +270,15 @@ class TestUserAdminScoping:
 
         client = login(tech_director.auc_email)
         response = client.get(
-            reverse("admin:users_user_change", args=[other_member.pk])
+            reverse("admin:users_user_change", args=[other_member.pk]),
         )
         assert response.status_code == HTTPStatus.FORBIDDEN
 
     def test_tech_director_user_form_role_field_restricted_to_own_committee(
-        self, tech_director, tech_role, ops_role
+        self,
+        tech_director,
+        tech_role,
+        ops_role,
     ):
         client = login(tech_director.auc_email)
         response = client.get(reverse("admin:users_user_add"))
@@ -263,7 +287,9 @@ class TestUserAdminScoping:
         assert choices == [tech_role]
 
     def test_tech_director_cannot_assign_user_to_other_committee_role(
-        self, tech_director, ops_role
+        self,
+        tech_director,
+        ops_role,
     ):
         client = login(tech_director.auc_email)
         response = client.post(
@@ -281,7 +307,9 @@ class TestUserAdminScoping:
         assert not User.objects.filter(auc_email="smiggled@aucegypt.edu").exists()
 
     def test_tech_director_cannot_grant_staff_via_fieldsets(
-        self, tech_director, tech_member
+        self,
+        tech_director,
+        tech_member,
     ):
         client = login(tech_director.auc_email)
         response = client.get(

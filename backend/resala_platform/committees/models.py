@@ -1,5 +1,6 @@
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -36,7 +37,9 @@ class Committee(models.Model):
                 pk=self.pk,
             )
             if conflict.exists():
-                ValidationError(_("Only one committee may be the Presidential Office."))
+                raise ValidationError(
+                    _("Only one committee may be the Presidential Office."),
+                )
 
     class Meta:
         verbose_name = _("Committee")

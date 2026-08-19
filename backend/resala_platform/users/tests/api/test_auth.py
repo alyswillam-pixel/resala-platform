@@ -1,4 +1,5 @@
 from datetime import timedelta
+from http import HTTPStatus
 
 import pytest
 from django.urls import reverse
@@ -35,7 +36,7 @@ def test_login_sets_httponly_knox_cookie(api_client, user):
         format="json",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "knox_token" in response.cookies
 
     cookie = response.cookies["knox_token"]
@@ -55,7 +56,7 @@ def test_login_rejects_invalid_credentials(api_client, user):
         format="json",
     )
 
-    assert response.status_code == 401
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 def test_authenticated_request_works_with_cookie(api_client, user):
@@ -68,18 +69,18 @@ def test_authenticated_request_works_with_cookie(api_client, user):
         format="json",
     )
 
-    assert login_response.status_code == 200
+    assert login_response.status_code == HTTPStatus.OK
 
     api_client.cookies["knox_token"] = login_response.cookies["knox_token"].value
     response = api_client.get(reverse("api:user-me"))
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert response.data["name"] == user.name
 
 
 def test_authenticated_request_fails_without_cookie(api_client):
     response = api_client.get(reverse("api:user-me"))
-    assert response.status_code == 401
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response["WWW-Authenticate"] == "Token"
 
 
@@ -93,16 +94,16 @@ def test_logout_revokes_token(api_client, user):
         format="json",
     )
 
-    assert login_response.status_code == 200
+    assert login_response.status_code == HTTPStatus.OK
 
     api_client.cookies["knox_token"] = login_response.cookies["knox_token"].value
     response = api_client.post(reverse("api:knox_logout"))
 
-    assert response.status_code == 204
+    assert response.status_code == HTTPStatus.NO_CONTENT
 
     response = api_client.get(reverse("api:user-me"))
 
-    assert response.status_code == 401
+    assert response.status_code == HTTPStatus.UNAUTHORIZED
     assert response["WWW-Authenticate"] == "Token"
 
 
@@ -116,7 +117,7 @@ def test_login_cookie_has_fifteen_minute_lifetime(api_client, user):
         format="json",
     )
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
 
     cookie = response.cookies["knox_token"]
 
@@ -126,7 +127,7 @@ def test_login_cookie_has_fifteen_minute_lifetime(api_client, user):
 def test_csrf_endpoint_returns_token_in_body(api_client):
     response = api_client.get(reverse("api:csrf_token"))
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "csrfToken" in response.data
     assert isinstance(response.data["csrfToken"], str)
     assert len(response.data["csrfToken"]) > 0
@@ -135,7 +136,7 @@ def test_csrf_endpoint_returns_token_in_body(api_client):
 def test_csrf_endpoint_sets_cookie(api_client):
     response = api_client.get(reverse("api:csrf_token"))
 
-    assert response.status_code == 200
+    assert response.status_code == HTTPStatus.OK
     assert "csrftoken" in response.cookies
 
     cookie = response.cookies["csrftoken"]
@@ -155,7 +156,7 @@ def test_csrf_blocks_unauthorized_post(user):
 
     csrf_client.cookies["knox_token"] = login_response.cookies["knox_token"].value
     response = csrf_client.post(reverse("api:knox_logout"))
-    assert response.status_code == 403
+    assert response.status_code == HTTPStatus.FORBIDDEN
 
 
 def test_csrf_allows_post_with_valid_token(user):
@@ -176,7 +177,7 @@ def test_csrf_allows_post_with_valid_token(user):
         HTTP_X_CSRFTOKEN=csrf_response.data["csrfToken"],
     )
 
-    assert response.status_code == 204
+    assert response.status_code == HTTPStatus.NO_CONTENT
 
 
 def test_csrf_blocks_mismatched_token(user):
@@ -196,5 +197,5 @@ def test_csrf_blocks_mismatched_token(user):
         reverse("api:knox_logout"),
         HTTP_X_CSRFTOKEN="not-the-real-token",
     )
-    
-    assert response.status_code == 403
+
+    assert response.status_code == HTTPStatus.FORBIDDEN
