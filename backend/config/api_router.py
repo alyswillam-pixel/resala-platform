@@ -11,8 +11,13 @@ from resala_platform.users.api.views import PasswordResetConfirmView
 from resala_platform.users.api.views import RequestPasswordResetView
 from resala_platform.users.api.views import UserViewSet
 
+from resala_platform.events.api.views import EventViewSet, BudgetViewSet
+
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
+
 router.register("users", UserViewSet)
+router.register("events", EventViewSet)
+router.register("budgets", BudgetViewSet)
 
 app_name = "api"
 
