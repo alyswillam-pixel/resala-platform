@@ -1,0 +1,11 @@
+Welcome to Resala Platform!
+
+An account has been created for you. To get started, please set your password by visiting the link below:
+
+{{ reset_url }}
+
+This link will expire after a limited time for security purposes. If it has expired, please contact your committee director to request a new one.
+
+If you did not expect this email, you can safely ignore it.
+
+— The Resala Platform Team

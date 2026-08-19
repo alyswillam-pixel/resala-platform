@@ -7,6 +7,8 @@ from resala_platform.users.api.views import CSRFTokenView
 from resala_platform.users.api.views import LoginView
 from resala_platform.users.api.views import LogoutAllView
 from resala_platform.users.api.views import LogoutView
+from resala_platform.users.api.views import PasswordResetConfirmView
+from resala_platform.users.api.views import RequestPasswordResetView
 from resala_platform.users.api.views import UserViewSet
 
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
@@ -20,4 +22,14 @@ urlpatterns = [
     path("auth/logout/", LogoutView.as_view(), name="knox_logout"),
     path("auth/logoutall/", LogoutAllView.as_view(), name="knox_logoutall"),
     path("auth/csrf/", CSRFTokenView.as_view(), name="csrf_token"),
+    path(
+        "auth/password-reset/",
+        RequestPasswordResetView.as_view(),
+        name="password_reset_request",
+    ),
+    path(
+        "auth/password-reset/confirm/",
+        PasswordResetConfirmView.as_view(),
+        name="password_reset_confirm",
+    ),
 ]

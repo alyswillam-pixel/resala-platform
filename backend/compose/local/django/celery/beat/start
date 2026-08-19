@@ -5,4 +5,14 @@ set -o nounset
 
 
 rm -f './celerybeat.pid'
+
+# Wait for Django migrations to complete before starting beat.
+# This prevents the scheduler from querying tables/columns that
+# haven't been created yet (e.g. the timezone column on
+# django_celery_beat_crontabschedule).
+until python manage.py migrate --check > /dev/null 2>&1; do
+    >&2 echo "Waiting for database migrations to complete..."
+    sleep 3
+done
+
 exec watchfiles --filter python celery.__main__.main --args '-A config.celery_app beat -l INFO'

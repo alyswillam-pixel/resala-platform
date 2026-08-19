@@ -10,9 +10,10 @@ from resala_platform.committees.models import CommitteeRole
 from resala_platform.committees.permissions import get_led_committee
 from resala_platform.committees.permissions import is_presidential_office_leader
 
-from .forms import UserAdminChangeForm, UserAdminCreationForm
+from .forms import UserAdminChangeForm
+from .forms import UserAdminCreationForm
 from .models import User
-from .tasks import send_new_user_credentials_email
+from .tasks import send_password_setup_email
 
 if settings.DJANGO_ADMIN_FORCE_ALLAUTH:
     # Force the `admin` sign in process to go through the `django-allauth` workflow:
@@ -87,7 +88,7 @@ class UserAdmin(auth_admin.UserAdmin):
         try:
             pk = model._meta.pk.get_prep_value(object_id)
             return model._default_manager.get(pk=pk)
-        except (model.DoesNotExist, ValueError):
+        except model.DoesNotExist, ValueError:
             return None
 
     def has_module_permission(self, request, obj=None):
@@ -180,7 +181,6 @@ class UserAdmin(auth_admin.UserAdmin):
         # ATOMIC_REQUESTS wraps the request in a transaction, so the user
         # row isn't visible to the worker until the transaction commits.
         if is_new:
-            base_url = request.build_absolute_uri('/')[:-1]
             transaction.on_commit(
-                lambda: send_new_user_credentials_email.delay(obj.pk, base_url)
+                lambda: send_password_setup_email(obj.pk, purpose="new_account"),
             )
