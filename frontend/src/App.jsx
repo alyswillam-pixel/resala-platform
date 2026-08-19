@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import Login from "./pages/Login";
+import { useState } from "react";
+import LoginForm from "./pages/LoginForm";
 import Home from "./pages/home";
 
 function App() {
-  const [currentPage, setCurrentPage] = useState("login"); // "login" | "home"
+  const [currentPage, setCurrentPage] = useState("login");
   const [userAuth, setUserAuth] = useState(null);
 
   const handleLoginSuccess = (authData) => {
@@ -13,7 +13,7 @@ function App() {
 
   if (currentPage === "login") {
     return (
-      <Login
+      <LoginForm
         onLoginSuccess={handleLoginSuccess}
         onBackToHome={() => setCurrentPage("home")}
       />
