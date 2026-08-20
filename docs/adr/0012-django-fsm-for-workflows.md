@@ -1,7 +1,7 @@
-# 0012 - Use django-fsm for Event and Request Workflows
+# 0012 - Use django-fsm for Event Workflows
 
  **Date:** 2026-08-18
- **Status:** Proposed
+ **Status:** Superseded by [ADR-00114](./0014-migrate-to-viewflow-fsm.md)
 
 ## Context
 
