@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.middleware.csrf import get_token
+from drf_spectacular.utils import OpenApiResponse
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema_view
 from knox.models import AuthToken
 from knox.views import LoginView as KnoxLoginView
 from knox.views import LogoutAllView as KnoxLogoutAllView
@@ -26,6 +29,29 @@ from .serializers import PasswordResetRequestSerializer
 from .serializers import UserSerializer
 
 
+@extend_schema_view(
+    retrieve=extend_schema(
+        summary="Retrieve User",
+        description=(
+            "Get details of a specific user. Restricted to the "
+            "currently authenticated user's ID."
+        ),
+    ),
+    list=extend_schema(
+        summary="List Users",
+        description=(
+            "Retrieve a list of users. Filtered to only include the current user."
+        ),
+    ),
+    update=extend_schema(
+        summary="Update User",
+        description="Update your user details.",
+    ),
+    partial_update=extend_schema(
+        summary="Partial Update User",
+        description="Partially update your user details.",
+    ),
+)
 class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
@@ -34,6 +60,10 @@ class UserViewSet(RetrieveModelMixin, ListModelMixin, UpdateModelMixin, GenericV
     def get_queryset(self, *args, **kwargs):
         return self.queryset.filter(id=self.request.user.id)
 
+    @extend_schema(
+        summary="Get Current User",
+        description="Retrieve the profile of the currently authenticated user.",
+    )
     @action(detail=False)
     def me(self, request):
         serializer = UserSerializer(request.user, context={"request": request})
@@ -44,6 +74,19 @@ class LoginView(KnoxLoginView):
     authentication_classes = []
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        summary="Login User",
+        description=(
+            "Authenticate a user using their AUC email and password. "
+            "A secure HttpOnly cookie containing the auth token is returned."
+        ),
+        responses={
+            200: OpenApiResponse(
+                description="Successful login. Auth token is set in a secure cookie.",
+            ),
+            401: OpenApiResponse(description="Invalid AUC email or password."),
+        },
+    )
     def post(self, request, *args, **kwargs):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -81,6 +124,13 @@ class LoginView(KnoxLoginView):
 class LogoutView(KnoxLogoutView):
     authentication_classes = [CookieTokenAuthentication]
 
+    @extend_schema(
+        summary="Logout User",
+        description=(
+            "Invalidate the current session token and clear the authentication cookie."
+        ),
+        responses={204: OpenApiResponse(description="Successfully logged out.")},
+    )
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         response.delete_cookie("knox_token", samesite="Lax")
@@ -91,6 +141,18 @@ class LogoutView(KnoxLogoutView):
 class LogoutAllView(KnoxLogoutAllView):
     authentication_classes = [CookieTokenAuthentication]
 
+    @extend_schema(
+        summary="Logout User (All Sessions)",
+        description=(
+            "Invalidate ALL active session tokens for the user "
+            "and clear the authentication cookie."
+        ),
+        responses={
+            204: OpenApiResponse(
+                description="Successfully logged out of all active sessions.",
+            ),
+        },
+    )
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         response.delete_cookie("knox_token", samesite="Lax")
@@ -102,6 +164,18 @@ class CSRFTokenView(APIView):
     permission_classes = [AllowAny]
     authenticate_classes = []
 
+    @extend_schema(
+        summary="Get CSRF Token",
+        description=(
+            "Retrieve a fresh CSRF token required for subsequent "
+            "POST/PUT/DELETE requests."
+        ),
+        responses={
+            200: OpenApiResponse(
+                description=("Returns a CSRF token in a JSON object."),
+            ),
+        },
+    )
     def get(self, request):
         return Response({"csrfToken": get_token(request)})
 
@@ -111,6 +185,17 @@ class RequestPasswordResetView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
 
+    @extend_schema(
+        summary="Request Password Reset",
+        description=(
+            "Submit an AUC email address to receive a password "
+            "reset link. A generic response is always returned "
+            "to prevent email enumeration."
+        ),
+        responses={
+            200: OpenApiResponse(description=("Returns a generic success message.")),
+        },
+    )
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -137,6 +222,15 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = [AnonRateThrottle]
 
+    @extend_schema(
+        summary="Confirm Password Reset",
+        description=(
+            "Use the token received via email to set a new password. "
+            "All previously active sessions for this user "
+            "will be invalidated immediately."
+        ),
+        responses={200: OpenApiResponse(description="Password successfully reset.")},
+    )
     def post(self, request, *args, **kwargs):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
