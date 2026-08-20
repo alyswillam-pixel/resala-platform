@@ -1,104 +1,227 @@
+from http import HTTPStatus
+
 import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
-from rest_framework import status
 
-from resala_platform.events.models import Event, EventStateTransition, Budget
+from resala_platform.committees.tests.factories import CommitteeFactory
+from resala_platform.committees.tests.factories import CommitteeRoleFactory
 from resala_platform.committees.tests.factories import (
-    CommitteeFactory, 
-    CommitteeRoleFactory, 
-    PresidentialOfficeCommitteeFactory
+    PresidentialOfficeCommitteeFactory,
 )
+from resala_platform.events.models import EventStateTransition
+from resala_platform.events.tests.factories import BudgetFactory
+from resala_platform.events.tests.factories import EventFactory
+from resala_platform.events.tests.factories import TreasuryCommitteeFactory
+from resala_platform.users.tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
+
 
 @pytest.fixture
 def api_client():
     return APIClient()
 
-@pytest.fixture
-def requester(django_user_model):
-    return django_user_model.objects.create_user(
-        auc_email="req@aucegypt.edu", auc_id="900260001", password="pw"
-    )
 
 @pytest.fixture
-def treasurer(django_user_model):
+def requester():
+    return UserFactory()
+
+
+@pytest.fixture
+def treasurer():
     committee = CommitteeFactory(name="Treasury")
+    TreasuryCommitteeFactory(committee=committee)
     role = CommitteeRoleFactory(name="Treasurer", committee=committee)
-    return django_user_model.objects.create_user(
-        auc_email="treasurer@aucegypt.edu", auc_id="900260002", password="pw", committee_role=role
-    )
+    return UserFactory(committee_role=role)
+
 
 @pytest.fixture
-def po_leader(django_user_model):
+def po_leader():
     po = PresidentialOfficeCommitteeFactory()
-    leader = django_user_model.objects.create_user(
-        auc_email="po@aucegypt.edu", auc_id="900260003", password="pw"
-    )
+    leader = UserFactory()
     po.director = leader
     po.save()
     leader.refresh_from_db()
     return leader
 
+
 @pytest.fixture
 def event(requester):
-    evt = Event.objects.create(title="Test Event", requester=requester)
-    Budget.objects.create(event=evt, amount=500.00)
+    evt = EventFactory(requester=requester)
+    BudgetFactory(event=evt)
     return evt
 
-def test_event_workflow_success_and_audit_trail(api_client, event, requester, treasurer):
-    # 1. Requester submits event successfully
-    api_client.force_authenticate(user=requester)
-    url = reverse("api:event-submit-for-budget-review", kwargs={"pk": event.pk})
-    response = api_client.post(url)
-    
-    assert response.status_code == status.HTTP_200_OK
-    
-    event = Event.objects.get(pk=event.pk)
-    assert event.current_state == "Pending Treasurer Review"
-    assert event.budget.status == "Pending Treasurer Review"
-    
-    # Audit trail verifies actor (Use .first() because ordering is -created_at)
-    transition = EventStateTransition.objects.first()
-    assert transition.event == event
-    assert transition.action == "submit_for_budget_review"
-    assert transition.actor == requester
-    
-    # 2. Treasurer successfully approves
-    api_client.force_authenticate(user=treasurer)
-    url_approve = reverse("api:event-treasurer-approve-budget", kwargs={"pk": event.pk})
-    resp_approve = api_client.post(url_approve)
-    
-    assert resp_approve.status_code == status.HTTP_200_OK
-    
-    event = Event.objects.get(pk=event.pk)
-    assert event.current_state == "Budget Approved"
-    
-    # Verifies the Budget object status was actively synced
-    assert event.budget.status == "Approved"
-    assert event.budget.approved_by == treasurer
-    
-    # Audit trail verifies treasurer
-    transition2 = EventStateTransition.objects.first()
-    assert transition2.action == "treasurer_approve_budget"
-    assert transition2.actor == treasurer
 
-def test_unauthorized_fsm_transition_blocked(api_client, event, treasurer):
-    # A Treasurer attempts to submit an event on behalf of the requester
-    api_client.force_authenticate(user=treasurer)
-    url = reverse("api:event-submit-for-budget-review", kwargs={"pk": event.pk})
-    response = api_client.post(url)
-    
-    assert response.status_code == status.HTTP_403_FORBIDDEN
-    
-    event = Event.objects.get(pk=event.pk)
-    assert event.current_state == "Draft" 
+def transition_url(name, event):
+    return reverse(
+        f"api:event-{name.replace('_', '-')}",
+        kwargs={"pk": event.pk},
+    )
 
-def test_invalid_fsm_sequence_blocked(api_client, event, requester):
-    # A Requester tries to activate an event before budget approval
-    api_client.force_authenticate(user=requester)
-    url = reverse("api:event-activate-event", kwargs={"pk": event.pk})
-    response = api_client.post(url)
-    
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+class TestEventWorkflowAPI:
+    def test_full_chain_and_audit_trail(self, api_client, event, requester, treasurer):
+        api_client.force_authenticate(user=requester)
+        response = api_client.post(transition_url("submit_for_budget_review", event))
+        assert response.status_code == HTTPStatus.OK
+
+        event.refresh_from_db()
+        assert event.current_state == "Pending Treasurer Review"
+        assert event.budget.status == "Pending Treasurer Review"
+
+        transition = EventStateTransition.objects.first()
+        assert transition.event == event
+        assert transition.action == "submit_for_budget_review"
+        assert transition.actor == requester
+        assert transition.from_state == "Draft"
+        assert transition.to_state == "Pending Treasurer Review"
+
+        api_client.force_authenticate(user=treasurer)
+        response = api_client.post(transition_url("treasurer_approve_budget", event))
+        assert response.status_code == HTTPStatus.OK
+
+        event.refresh_from_db()
+        assert event.current_state == "Budget Approved"
+        assert event.budget.status == "Approved"
+        assert event.budget.approved_by == treasurer
+
+        transition = EventStateTransition.objects.first()
+        assert transition.action == "treasurer_approve_budget"
+        assert transition.actor == treasurer
+
+    def test_unauthorized_transition_returns_403_and_leaves_state_unchanged(
+        self,
+        api_client,
+        event,
+        treasurer,
+    ):
+        api_client.force_authenticate(user=treasurer)
+        response = api_client.post(transition_url("submit_for_budget_review", event))
+        assert response.status_code == HTTPStatus.FORBIDDEN
+
+        event.refresh_from_db()
+        assert event.current_state == "Draft"
+        assert not EventStateTransition.objects.exists()
+
+    def test_invalid_sequence_returns_400(self, api_client, event, requester):
+        api_client.force_authenticate(user=requester)
+        response = api_client.post(transition_url("activate_event", event))
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    def test_unregistered_committee_member_gets_403_on_approve(
+        self,
+        api_client,
+        event,
+        requester,
+    ):
+        committee = CommitteeFactory(name="Branding")
+        role = CommitteeRoleFactory(name="Head of Branding", committee=committee)
+        outsider = UserFactory(committee_role=role)
+
+        api_client.force_authenticate(user=requester)
+        api_client.post(transition_url("submit_for_budget_review", event))
+
+        api_client.force_authenticate(user=outsider)
+        response = api_client.post(transition_url("treasurer_approve_budget", event))
+        assert response.status_code == HTTPStatus.FORBIDDEN
+
+    def test_president_can_approve_after_escalation(
+        self,
+        api_client,
+        event,
+        requester,
+        treasurer,
+        po_leader,
+    ):
+        api_client.force_authenticate(user=requester)
+        api_client.post(transition_url("submit_for_budget_review", event))
+        api_client.force_authenticate(user=treasurer)
+        response = api_client.post(transition_url("treasurer_escalate_budget", event))
+        assert response.status_code == HTTPStatus.OK
+
+        api_client.force_authenticate(user=po_leader)
+        response = api_client.post(transition_url("president_approve_budget", event))
+        assert response.status_code == HTTPStatus.OK
+
+        event.refresh_from_db()
+        assert event.current_state == "Budget Approved"
+        assert event.budget.approved_by == po_leader
+
+    def test_unauthenticated_request_is_rejected(self, api_client, event):
+        response = api_client.post(transition_url("submit_for_budget_review", event))
+        assert response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+
+
+class TestBudgetViewSetPermissions:
+    def test_requester_can_create_budget_for_own_draft_event(
+        self,
+        api_client,
+        requester,
+    ):
+        api_client.force_authenticate(user=requester)
+        event = EventFactory(requester=requester)
+        response = api_client.post(
+            reverse("api:budget-list"),
+            {
+                "event": str(event.pk),
+                "amount": "150.0",
+            },
+        )
+        assert response.status_code == HTTPStatus.CREATED
+
+    def test_cannot_create_budget_for_someone_elses_event(self, api_client, requester):
+        other = UserFactory()
+        event = EventFactory(requester=other)
+        api_client.force_authenticate(user=requester)
+        response = api_client.post(
+            reverse("api:budget-list"),
+            {
+                "event": str(event.pk),
+                "amount": "150.0",
+            },
+        )
+        assert response.status_code == HTTPStatus.FORBIDDEN
+
+    def test_cannot_create_second_budget_for_same_event(
+        self,
+        api_client,
+        event,
+        requester,
+    ):
+        api_client.force_authenticate(user=requester)
+        response = api_client.post(
+            reverse("api:budget-list"),
+            {
+                "event": str(event.pk),
+                "amount": "999.00",
+            },
+        )
+        assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    def test_cannot_update_budget_once_event_leaves_draft(
+        self,
+        api_client,
+        event,
+        requester,
+        treasurer,
+    ):
+        api_client.force_authenticate(user=requester)
+        api_client.post(transition_url("submit_for_budget_review", event))
+        response = api_client.patch(
+            reverse("api:budget-detail", kwargs={"pk": event.budget.pk}),
+            {
+                "amount": "1.00",
+            },
+        )
+        assert response.status_code == HTTPStatus.FORBIDDEN
+
+    def test_owner_can_update_budget_while_draft(self, api_client, event, requester):
+        api_client.force_authenticate(user=requester)
+        response = api_client.patch(
+            reverse("api:budget-detail", kwargs={"pk": event.budget.pk}),
+            {
+                "amount": "42.00",
+            },
+        )
+        assert response.status_code == HTTPStatus.OK
