@@ -1,3 +1,6 @@
+from drf_spectacular.utils import OpenApiResponse
+from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema_view
 from rest_framework import status
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -60,9 +63,25 @@ class BaseWorkflowViewSet(viewsets.ModelViewSet):
         )
 
 
-def make_transition_action(transition_name):
+def make_transition_action(transition_name, description):
     """Factory to generate DRF actions dynamically."""
 
+    @extend_schema(
+        summary=transition_name.replace("_", " ").title(),
+        description=description,
+        request=None,
+        responses={
+            200: OpenApiResponse(
+                description="Transition successful, returns the new state.",
+            ),
+            400: OpenApiResponse(
+                description="Transition not allowed from the current state.",
+            ),
+            403: OpenApiResponse(
+                description="You do not have permission to perform this action.",
+            ),
+        },
+    )
     def _action(self, request, pk=None):
         return self.perform_transition(transition_name)
 
@@ -75,6 +94,34 @@ def make_transition_action(transition_name):
     )(_action)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List Events",
+        description="Retrieve a list of all events.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve Event",
+        description="Get details of a specific event.",
+    ),
+    create=extend_schema(
+        summary="Create Event",
+        description=(
+            "Create a new event in Draft state. You automatically become the requester."
+        ),
+    ),
+    update=extend_schema(
+        summary="Update Event",
+        description="Update an event's details. Usually only allowed in Draft state.",
+    ),
+    partial_update=extend_schema(
+        summary="Partial Update Event",
+        description="Partially update an event's details.",
+    ),
+    destroy=extend_schema(
+        summary="Delete Event",
+        description="Delete an event. Allowed only for drafts or admins.",
+    ),
+)
 class EventViewSet(BaseWorkflowViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
@@ -85,22 +132,63 @@ class EventViewSet(BaseWorkflowViewSet):
     def perform_create(self, serializer):
         serializer.save(requester=self.request.user)
 
-    TRANSITIONS = [
-        "submit_for_budget_review",
-        "treasurer_approve_budget",
-        "treasurer_escalate_budget",
-        "president_approve_budget",
-        "reject_budget",
-        "revise_budget",
-        "turn_down_event",
-        "activate_event",
-        "complete_event",
-    ]
+    TRANSITIONS = {
+        "submit_for_budget_review": "Submit a Draft event for Treasurer Review.",
+        "treasurer_approve_budget": (
+            "[Treasurer] Approve the budget. Event moves to Budget Approved."
+        ),
+        "treasurer_escalate_budget": (
+            "[Treasurer] Escalate the budget to the Presidential Office."
+        ),
+        "president_approve_budget": (
+            "[PO Leader] Approve an escalated budget. Event moves to Budget Approved."
+        ),
+        "reject_budget": (
+            "[Treasurer/PO] Reject the budget. Event moves to Budget Rejected."
+        ),
+        "revise_budget": (
+            "[Requester] Move a Rejected event back to Draft for revisions."
+        ),
+        "turn_down_event": ("[Treasurer/PO] Permanently turn down a rejected event."),
+        "activate_event": (
+            "[Requester] Activate the event after its budget is approved."
+        ),
+        "complete_event": "[Requester] Mark an Active event as Completed.",
+    }
 
-    for transition in TRANSITIONS:
-        locals()[transition] = make_transition_action(transition)
+    for transition_name, description in TRANSITIONS.items():
+        locals()[transition_name] = make_transition_action(transition_name, description)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List Budgets",
+        description="Retrieve a list of budgets.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve Budget",
+        description="Get details of a specific budget.",
+    ),
+    create=extend_schema(
+        summary="Create Budget",
+        description=(
+            "Create a budget for your own Draft event. "
+            "An event can only have one budget."
+        ),
+    ),
+    update=extend_schema(
+        summary="Update Budget",
+        description=(
+            "Update your budget. Allowed only while the associated "
+            "event is in Draft state."
+        ),
+    ),
+    partial_update=extend_schema(
+        summary="Partial Update Budget",
+        description="Partially update your budget.",
+    ),
+    destroy=extend_schema(summary="Delete Budget", description="Delete a budget."),
+)
 class BudgetViewSet(viewsets.ModelViewSet):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
