@@ -659,12 +659,15 @@ wheels = [
 ]
 
 [[package]]
-name = "django-fsm"
-version = "3.0.1"
+name = "django-filter"
+version = "26.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/06/0b/605c646b09bcf4d49aa64fec87c732c6acbff93b945339381a6df0f78e99/django-fsm-3.0.1.tar.gz", hash = "sha256:d6436f5931e09d76e9a434781548627deab80c74cd6726adce95b31b5ddd4d1e", size = 12800, upload-time = "2025-10-07T16:33:27.398Z" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/cb/3e/563965173d4cbb5fc308087e7b3d11a115b7b67273d093622480b1e31f78/django_filter-26.1.tar.gz", hash = "sha256:66ea04031b068c77c86e1ac26ced7a3f8f13ce797f5795751707e3deefc58054", size = 144299, upload-time = "2026-07-11T09:27:02.767Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fc/87/ad5a38d1a8241b485835c6e6158634b29e885be78424ca42fb63df15b965/django_fsm-3.0.1-py2.py3-none-any.whl", hash = "sha256:ea07be2da221efa5cb8743cc94e0bb64fd962adff594f82269040eb4708c30c6", size = 12454, upload-time = "2025-10-07T16:33:26.218Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/01/afffed1e3c4540fb75bf550a18b6176a9f6371b5f3e52b69a28995b6480c/django_filter-26.1-py3-none-any.whl", hash = "sha256:7d98ef2899218e6242619b532cb1b95af14e09dfcf74844aecb550ad27b59ff2", size = 94069, upload-time = "2026-07-11T09:27:01.012Z" },
 ]
 
 [[package]]
@@ -760,6 +763,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2f/83/2559b826e27ff2d64be5d0f9c3c14ffed83e8e88ac934a777ed65e750297/django_upgrade-1.31.1.tar.gz", hash = "sha256:73161490d95c1e54ba8b6914ef11cd381edc556fc22ef0615bf34a9dac46f5a0", size = 45097, upload-time = "2026-06-25T23:15:57.338Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/2d/bc/35f84dfb21171210fb83a6ca65a0e63861d362eb763e59ed220b6e92f902/django_upgrade-1.31.1-py3-none-any.whl", hash = "sha256:84e9cf53600262022762844c9e2156f615102255f134e9255eeb6591bd80ac8a", size = 78843, upload-time = "2026-06-25T23:15:55.692Z" },
+]
+
+[[package]]
+name = "django-viewflow"
+version = "2.4.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+    { name = "django-filter" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/eb/af/d55b421c4065bbb506ae57cc46e27b8eb43d2a1133c65ec1a8d06282d21f/django_viewflow-2.4.0.tar.gz", hash = "sha256:dbce804262f2d5d41d87383042670d1adf003d3952823742a2e35cfff7212768", size = 24659206, upload-time = "2026-07-30T13:45:15.62Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/ff/8aa0cf50a3bef70ce158bc2e4dd865b98d9ee250eae10d9dbfbf62fed66c/django_viewflow-2.4.0-py3-none-any.whl", hash = "sha256:f3d2b5b2ca46b4e54f2162b9faaadc01cb47629f87e5c6b03f93ade4af4f27bb", size = 24846482, upload-time = "2026-07-30T13:45:07.977Z" },
 ]
 
 [[package]]
@@ -1732,10 +1748,10 @@ dependencies = [
     { name = "django-cors-headers" },
     { name = "django-crispy-forms" },
     { name = "django-environ" },
-    { name = "django-fsm" },
     { name = "django-model-utils" },
     { name = "django-redis" },
     { name = "django-rest-knox" },
+    { name = "django-viewflow" },
     { name = "djangorestframework" },
     { name = "drf-spectacular" },
     { name = "flower" },
@@ -1785,10 +1801,10 @@ requires-dist = [
     { name = "django-cors-headers", specifier = "==4.9.0" },
     { name = "django-crispy-forms", specifier = "==2.7" },
     { name = "django-environ", specifier = "==0.14.0" },
-    { name = "django-fsm", specifier = ">=2.8.1" },
     { name = "django-model-utils", specifier = "==5.0.0" },
     { name = "django-redis", specifier = "==7.0.0" },
     { name = "django-rest-knox", specifier = ">=5.1.0" },
+    { name = "django-viewflow", specifier = ">=2.4.0" },
     { name = "djangorestframework", specifier = "==3.18.0" },
     { name = "drf-spectacular", specifier = "==0.30.0" },
     { name = "flower", specifier = "==2.0.1" },
