@@ -101,7 +101,11 @@ THIRD_PARTY_APPS = [
     "knox",
 ]
 
-LOCAL_APPS = ["resala_platform.users", "resala_platform.committees", "resala_platform.events"]
+LOCAL_APPS = [
+    "resala_platform.users",
+    "resala_platform.committees",
+    "resala_platform.events",
+]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 

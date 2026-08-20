@@ -3,6 +3,8 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from rest_framework.routers import SimpleRouter
 
+from resala_platform.events.api.views import BudgetViewSet
+from resala_platform.events.api.views import EventViewSet
 from resala_platform.users.api.views import CSRFTokenView
 from resala_platform.users.api.views import LoginView
 from resala_platform.users.api.views import LogoutAllView
@@ -10,8 +12,6 @@ from resala_platform.users.api.views import LogoutView
 from resala_platform.users.api.views import PasswordResetConfirmView
 from resala_platform.users.api.views import RequestPasswordResetView
 from resala_platform.users.api.views import UserViewSet
-
-from resala_platform.events.api.views import EventViewSet, BudgetViewSet
 
 router = DefaultRouter() if settings.DEBUG else SimpleRouter()
 
