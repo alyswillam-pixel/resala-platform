@@ -1,7 +1,7 @@
 # 0015 - Treasury Committee Registry for Budget-Approval Authority
 
  **Date:** 2026-08-18
- **Status:** Accepted
+ **Status:** Superseded by [ADR-0016](0016-generalize-committee-capability-registry.md)
 
 ## Context
 
