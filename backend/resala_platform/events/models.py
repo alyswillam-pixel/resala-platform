@@ -1,26 +1,24 @@
 import uuid
+from decimal import Decimal
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django_fsm import FSMField, transition
 
-from resala_platform.committees.permissions import is_presidential_office_leader
 
-# --- Permission Helper Functions ---
-
-def is_event_requester(instance, user):
-    return instance.requester == user
-
-def is_treasurer(instance, user):
-    # Strict null-checking for both the role AND the committee relation
-    if not user.is_authenticated or not getattr(user, 'committee_role', None) or not user.committee_role.committee:
-        return False
-    return 'treasurer' in user.committee_role.name.lower() or 'treasury' in user.committee_role.committee.name.lower()
-
-def is_po_leader(instance, user):
-    return is_presidential_office_leader(user)
-
-def is_treasurer_or_po_leader(instance, user):
-    return is_treasurer(instance, user) or is_po_leader(instance, user)
+class EventState(models.TextChoices):
+    DRAFT = "Draft", _("Draft")
+    PENDING_TREASURER_REVIEW = "Pending Treasurer Review", _("Pending Treasurer Review")
+    PENDING_PRESIDENTIAL_REVIEW = (
+        "Pending Presidential Review",
+        _(
+            "Pending Presidential Review",
+        ),
+    )
+    BUDGET_APPROVED = "Budget Approved", _("Budget Approved")
+    ACTIVE = "Active", _("Active")
+    COMPLETED = "Completed", _("Completed")
+    BUDGET_REJECTED = "Budget Rejected", _("Budget Rejected")
+    TURNED_DOWN = "Turned Down", _("Turned Down")
 
 
 class Event(models.Model):
@@ -33,71 +31,22 @@ class Event(models.Model):
         on_delete=models.PROTECT,
         related_name="requested_events",
     )
-    current_state = FSMField(_("Current State"), default="Draft", protected=True)
-    
-    created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
-    updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
+    current_state = models.CharField(
+        _("Current State"),
+        max_length=50,
+        choices=EventState,
+        default=EventState.DRAFT,
+    )
+    created_at = models.DateField(_("Created At"), auto_now_add=True)
+    updated_at = models.DateField(_("Updated At"), auto_now=True)
 
     class Meta:
         verbose_name = _("Event")
         verbose_name_plural = _("Events")
         ordering = ["-created_at"]
 
-    def __str__(self) -> str:
+    def __str__(self):
         return self.title
-
-    # --- Event & Budget Workflows ---
-    
-    @transition(field=current_state, source="Draft", target="Pending Treasurer Review", permission=is_event_requester)
-    def submit_for_budget_review(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Pending Treasurer Review'
-            self.budget.save()
-
-    @transition(field=current_state, source="Pending Treasurer Review", target="Budget Approved", permission=is_treasurer)
-    def treasurer_approve_budget(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Approved'
-            self.budget.approved_by = by_user
-            self.budget.save()
-
-    @transition(field=current_state, source="Pending Treasurer Review", target="Pending Presidential Review", permission=is_treasurer)
-    def treasurer_escalate_budget(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Pending Presidential Review'
-            self.budget.save()
-
-    @transition(field=current_state, source="Pending Presidential Review", target="Budget Approved", permission=is_po_leader)
-    def president_approve_budget(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Approved'
-            self.budget.approved_by = by_user
-            self.budget.save()
-
-    @transition(field=current_state, source=["Pending Treasurer Review", "Pending Presidential Review"], target="Budget Rejected", permission=is_treasurer_or_po_leader)
-    def reject_budget(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Rejected'
-            self.budget.save()
-
-    @transition(field=current_state, source="Budget Rejected", target="Draft", permission=is_event_requester)
-    def revise_budget(self, by_user=None):
-        if hasattr(self, 'budget'):
-            self.budget.status = 'Pending'
-            self.budget.approved_by = None
-            self.budget.save()
-
-    @transition(field=current_state, source="Budget Rejected", target="Turned Down", permission=is_treasurer_or_po_leader)
-    def turn_down_event(self, by_user=None):
-        pass # Event is turned down, budget remains rejected
-
-    @transition(field=current_state, source="Budget Approved", target="Active", permission=is_event_requester)
-    def activate_event(self, by_user=None):
-        pass
-
-    @transition(field=current_state, source="Active", target="Completed", permission=is_event_requester)
-    def complete_event(self, by_user=None):
-        pass
 
 
 class EventStateTransition(models.Model):
@@ -119,7 +68,6 @@ class EventStateTransition(models.Model):
         related_name="event_transitions_made",
     )
     note = models.TextField(_("Note"), blank=True)
-    
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
 
     class Meta:
@@ -127,7 +75,7 @@ class EventStateTransition(models.Model):
         verbose_name_plural = _("Event State Transitions")
         ordering = ["-created_at"]
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.event.title}: {self.from_state} -> {self.to_state}"
 
 
@@ -139,8 +87,13 @@ class Budget(models.Model):
         on_delete=models.CASCADE,
         related_name="budget",
     )
-    amount = models.DecimalField(_("Amount"), max_digits=12, decimal_places=2, default=0.00)
-    status = models.CharField(_("Status"), max_length=50, default="Pending")
+    amount = models.DecimalField(
+        _("Amount"),
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+    status = models.CharField(_("State"), max_length=50, default="Pending")
     approved_by = models.ForeignKey(
         "users.User",
         verbose_name=_("Approved By"),
@@ -149,7 +102,6 @@ class Budget(models.Model):
         blank=True,
         related_name="approved_budgets",
     )
-    
     created_at = models.DateTimeField(_("Created At"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Updated At"), auto_now=True)
 
@@ -157,5 +109,32 @@ class Budget(models.Model):
         verbose_name = _("Budget")
         verbose_name_plural = _("Budgets")
 
+    def __str__(self):
+        return f"Budget for {self.event.title} — {self.amount}"
+
+
+class TreasuryCommittee(models.Model):
+    """
+    Registry of committees whose members are authorized to review event budgets
+    (approve/escalate/reject at the treasurer stage). Empty by default, and
+    populated via the Django admin panel by the Presidential Office only.
+
+    Decouples budget-review via authority from the Committee model itself; and
+    supports more than one committee holding this authority if ever needed.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    committee = models.OneToOneField(
+        "committees.Committee",
+        verbose_name=_("Treasury Committee"),
+        on_delete=models.CASCADE,
+        related_name="treasury_designation",
+    )
+    added_at = models.DateTimeField(_("Added At"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Treasury Committee")
+        verbose_name_plural = _("Treasury Committees")
+
     def __str__(self) -> str:
-        return f"Budget for {self.event.title} - {self.amount}"
+        return self.committee.name
