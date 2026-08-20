@@ -4,6 +4,7 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
+from resala_platform.committees.models import CommitteeCapability
 from resala_platform.committees.tests.factories import CommitteeFactory
 from resala_platform.committees.tests.factories import CommitteeRoleFactory
 from resala_platform.committees.tests.factories import (
@@ -12,7 +13,6 @@ from resala_platform.committees.tests.factories import (
 from resala_platform.events.models import EventStateTransition
 from resala_platform.events.tests.factories import BudgetFactory
 from resala_platform.events.tests.factories import EventFactory
-from resala_platform.events.tests.factories import TreasuryCommitteeFactory
 from resala_platform.users.tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -31,7 +31,10 @@ def requester():
 @pytest.fixture
 def treasurer():
     committee = CommitteeFactory(name="Treasury")
-    TreasuryCommitteeFactory(committee=committee)
+    CommitteeCapability.objects.create(
+        committee=committee,
+        capability=CommitteeCapability.Capability.TREASURY,
+    )
     role = CommitteeRoleFactory(name="Treasurer", committee=committee)
     return UserFactory(committee_role=role)
 
@@ -44,6 +47,17 @@ def po_leader():
     po.save()
     leader.refresh_from_db()
     return leader
+
+
+@pytest.fixture
+def event_creator():
+    committee = CommitteeFactory(name="Events Team")
+    CommitteeCapability.objects.create(
+        committee=committee,
+        capability=CommitteeCapability.Capability.EVENT_CREATION,
+    )
+    role = CommitteeRoleFactory(name="Event Coordinator", committee=committee)
+    return UserFactory(committee_role=role)
 
 
 @pytest.fixture
@@ -225,3 +239,47 @@ class TestBudgetViewSetPermissions:
             },
         )
         assert response.status_code == HTTPStatus.OK
+
+
+class TestEventCreationPermissions:
+    def test_authorized_committee_member_can_create_event(
+        self,
+        api_client,
+        event_creator,
+    ):
+        api_client.force_authenticate(user=event_creator)
+        response = api_client.post(
+            reverse("api:event-list"),
+            {
+                "title": "Annual Tech Symposium",
+                "description": {"topic": "AI and Future"},
+                "requester": str(event_creator.pk),
+            },
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.CREATED
+
+    def test_unauthorized_committee_member_cannot_create_event(
+        self,
+        api_client,
+        requester,
+    ):
+        api_client.force_authenticate(user=requester)
+        response = api_client.post(
+            reverse("api:event-list"),
+            {"title": "Unauthorized Hackathon", "requester": str(requester.pk)},
+            format="json",
+        )
+        assert response.status_code == HTTPStatus.FORBIDDEN
+        assert (
+            response.json()["detail"]
+            == "Your committee is not authorized to create events."
+        )
+
+    def test_unauthenticated_user_cannot_create_event(self, api_client):
+        response = api_client.post(
+            reverse("api:event-list"),
+            {"title": "Ghost Event"},
+            format="json",
+        )
+        assert response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)

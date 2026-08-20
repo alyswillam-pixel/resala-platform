@@ -11,6 +11,7 @@ from resala_platform.events.flows import EventFlow
 from resala_platform.events.models import Budget
 from resala_platform.events.models import Event
 from resala_platform.events.models import EventStateTransition
+from resala_platform.events.permissions import CanCreateEvents
 
 from .serializers import BudgetSerializer
 from .serializers import EventSerializer
@@ -128,6 +129,12 @@ class EventViewSet(BaseWorkflowViewSet):
     flow_class = EventFlow
     transition_log_model = EventStateTransition
     transition_log_fk = "event"
+
+    def get_permissions(self):
+        permissions = super().get_permissions()
+        if self.action == "create":
+            permissions.append(CanCreateEvents())
+        return permissions
 
     def perform_create(self, serializer):
         serializer.save(requester=self.request.user)
