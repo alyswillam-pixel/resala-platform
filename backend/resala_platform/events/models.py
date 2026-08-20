@@ -111,30 +111,3 @@ class Budget(models.Model):
 
     def __str__(self):
         return f"Budget for {self.event.title} — {self.amount}"
-
-
-class TreasuryCommittee(models.Model):
-    """
-    Registry of committees whose members are authorized to review event budgets
-    (approve/escalate/reject at the treasurer stage). Empty by default, and
-    populated via the Django admin panel by the Presidential Office only.
-
-    Decouples budget-review via authority from the Committee model itself; and
-    supports more than one committee holding this authority if ever needed.
-    """
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
-    committee = models.OneToOneField(
-        "committees.Committee",
-        verbose_name=_("Treasury Committee"),
-        on_delete=models.CASCADE,
-        related_name="treasury_designation",
-    )
-    added_at = models.DateTimeField(_("Added At"), auto_now_add=True)
-
-    class Meta:
-        verbose_name = _("Treasury Committee")
-        verbose_name_plural = _("Treasury Committees")
-
-    def __str__(self) -> str:
-        return self.committee.name

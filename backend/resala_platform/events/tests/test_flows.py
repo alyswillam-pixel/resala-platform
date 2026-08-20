@@ -1,5 +1,6 @@
 import pytest
 
+from resala_platform.committees.models import CommitteeCapability
 from resala_platform.committees.tests.factories import CommitteeFactory
 from resala_platform.committees.tests.factories import CommitteeRoleFactory
 from resala_platform.committees.tests.factories import (
@@ -7,10 +8,8 @@ from resala_platform.committees.tests.factories import (
 )
 from resala_platform.events.flows import EventFlow
 from resala_platform.events.models import EventState
-from resala_platform.events.models import TreasuryCommittee
 from resala_platform.events.tests.factories import BudgetFactory
 from resala_platform.events.tests.factories import EventFactory
-from resala_platform.events.tests.factories import TreasuryCommitteeFactory
 from resala_platform.users.tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -24,7 +23,10 @@ def requester():
 @pytest.fixture
 def treasurer():
     committee = CommitteeFactory(name="Treasury")
-    TreasuryCommitteeFactory(committee=committee)
+    CommitteeCapability.objects.create(
+        committee=committee,
+        capability=CommitteeCapability.Capability.TREASURY,
+    )
     role = CommitteeRoleFactory(name="Treasurer", committee=committee)
     return UserFactory(committee_role=role)
 
@@ -169,8 +171,9 @@ class TestPermissionEnforcement:
         flow = EventFlow(event)
         assert not flow.treasurer_approve_budget.has_perm(unregistered_committee_member)
 
-        TreasuryCommitteeFactory(
+        CommitteeCapability.objects.create(
             committee=unregistered_committee_member.committee_role.committee,
+            capability=CommitteeCapability.Capability.TREASURY,
         )
 
         flow = EventFlow(event)
@@ -184,8 +187,9 @@ class TestPermissionEnforcement:
         flow = EventFlow(event)
         assert flow.treasurer_approve_budget.has_perm(treasurer)
 
-        TreasuryCommittee.objects.filter(
+        CommitteeCapability.objects.filter(
             committee=treasurer.committee_role.committee,
+            capability=CommitteeCapability.Capability.TREASURY,
         ).delete()
 
         flow = EventFlow(event)
