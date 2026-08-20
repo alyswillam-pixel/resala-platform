@@ -2,7 +2,9 @@ import pytest
 from django.db import IntegrityError
 
 from resala_platform.committees.models import Committee
+from resala_platform.committees.models import CommitteeCapability
 from resala_platform.committees.models import CommitteeRole
+from resala_platform.committees.tests.factories import CommitteeCapabilityFactory
 from resala_platform.committees.tests.factories import CommitteeFactory
 from resala_platform.committees.tests.factories import CommitteeRoleFactory
 
@@ -42,3 +44,26 @@ class TestCommitteeRole:
         committee_b = CommitteeFactory()
         CommitteeRoleFactory(committee=committee_a, name="Navigator")
         CommitteeRoleFactory(committee=committee_b, name="Navigator")
+
+
+class TestCommitteeCapability:
+    def test_str(self):
+        committee = CommitteeFactory(name="Tech")
+        capability = CommitteeCapabilityFactory(
+            committee=committee,
+            capability=CommitteeCapability.Capability.TREASURY,
+        )
+        assert str(capability) == "Tech — Treasury / Budget Approval"
+
+    def test_unique_together_constraint(self):
+        committee = CommitteeFactory()
+        CommitteeCapabilityFactory(
+            committee=committee,
+            capability=CommitteeCapability.Capability.EVENT_CREATION,
+        )
+
+        with pytest.raises(IntegrityError):
+            CommitteeCapability.objects.create(
+                committee=committee,
+                capability=CommitteeCapability.Capability.EVENT_CREATION,
+            )

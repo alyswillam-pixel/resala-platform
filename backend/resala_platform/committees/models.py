@@ -68,3 +68,37 @@ class CommitteeRole(models.Model):
 
     def __str__(self) -> str:
         return f"{self.committee.name} — {self.name}"
+
+
+class CommitteeCapability(models.Model):
+    """
+    Registry of platform-wide capabilities granted to specific committees.
+    Managed exclusively by Presidential Office leadership via the Django admin.
+    """
+
+    class Capability(models.TextChoices):
+        TREASURY = "treasury", _("Treasury / Budget Approval")
+        EVENT_CREATION = "event_creation", _("Event Creation")
+        # Future capabilities (e.g., REQUEST_ROUTING) can simply be added here
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid7, editable=False)
+    committee = models.ForeignKey(
+        "committees.Committee",
+        verbose_name=_("Committee"),
+        on_delete=models.CASCADE,
+        related_name="capabilities",
+    )
+    capability = models.CharField(
+        _("Capability"),
+        max_length=50,
+        choices=Capability.choices,
+    )
+    added_at = models.DateTimeField(_("Added At"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Committee Capability")
+        verbose_name_plural = _("Committee Capabilities")
+        unique_together = ("committee", "capability")
+
+    def __str__(self) -> str:
+        return f"{self.committee.name} — {self.get_capability_display()}"

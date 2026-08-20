@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.core.exceptions import PermissionDenied
 
 from .models import Committee
+from .models import CommitteeCapability
 from .models import CommitteeRole
 from .permissions import get_led_committee
 from .permissions import is_presidential_office_leader
@@ -100,3 +101,27 @@ class CommitteeRoleAdmin(admin.ModelAdmin):
                 )
 
         super().save_model(request, obj, form, change)
+
+
+@admin.register(CommitteeCapability)
+class CommitteeCapabilityAdmin(admin.ModelAdmin):
+    list_display = ("committee", "capability", "added_at")
+    list_filter = ("capability",)
+    search_fields = ("committee__name",)
+
+    def has_module_permission(self, request):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.is_superuser or is_presidential_office_leader(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_add_permission(self, request):
+        return self.has_module_permission(request)
+
+    def has_change_permission(self, request, obj=None):
+        return self.has_module_permission(request)
+
+    def has_delete_permission(self, request, obj=None):
+        return self.has_module_permission(request)

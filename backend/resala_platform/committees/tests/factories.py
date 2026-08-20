@@ -2,6 +2,7 @@ import factory
 from factory.django import DjangoModelFactory
 
 from resala_platform.committees.models import Committee
+from resala_platform.committees.models import CommitteeCapability
 from resala_platform.committees.models import CommitteeRole
 from resala_platform.users.models import User
 
@@ -70,3 +71,11 @@ class CommitteeRoleFactory(DjangoModelFactory[CommitteeRole]):
 
     class Meta:
         model = CommitteeRole
+
+
+class CommitteeCapabilityFactory(DjangoModelFactory[CommitteeCapability]):
+    committee = factory.SubFactory(CommitteeFactory)
+    capability = CommitteeCapability.Capability.TREASURY
+
+    class Meta:
+        model = CommitteeCapability

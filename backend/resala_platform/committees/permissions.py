@@ -1,6 +1,7 @@
 from django.db.models import Q
 
 from .models import Committee
+from .models import CommitteeCapability
 
 
 def get_presidential_office():
@@ -22,3 +23,13 @@ def get_led_committee(user):
         .filter(Q(director=user) | Q(vice_director=user))
         .first()
     )
+
+
+def committee_has_capability(committee_id, capability) -> bool:
+    if not committee_id:
+        return False
+
+    return CommitteeCapability.objects.filter(
+        committee_id=committee_id,
+        capability=capability,
+    ).exists()
