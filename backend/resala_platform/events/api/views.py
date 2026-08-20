@@ -107,7 +107,9 @@ def make_transition_action(transition_name, description):
     create=extend_schema(
         summary="Create Event",
         description=(
-            "Create a new event in Draft state. You automatically become the requester."
+            "Create a new event in Draft state. "
+            "You automatically become the requester. "
+            "Requires your committee to have the `EVENT_CREATION` capability."
         ),
     ),
     update=extend_schema(
