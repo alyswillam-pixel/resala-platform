@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { LayoutDashboard, Clock, CheckCircle2, AlertTriangle, User, Send, Layers, Check, Edit3, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { LayoutDashboard, Clock, CheckCircle2, AlertTriangle, Send, Layers } from "lucide-react";
 
 export default function CommitteeDashboard({ tasks, onSubmitForApproval }) {
   const [toast, setToast] = useState(null);
