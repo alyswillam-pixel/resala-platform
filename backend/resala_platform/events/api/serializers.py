@@ -2,31 +2,6 @@ from rest_framework import serializers
 
 from resala_platform.events.models import Budget
 from resala_platform.events.models import Event
-from resala_platform.events.models import EventStateTransition
-
-
-class EventStateTransitionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EventStateTransition
-        fields = [
-            "id",
-            "event",
-            "from_state",
-            "to_state",
-            "action",
-            "actor",
-            "note",
-            "created_at",
-        ]
-        read_only_fields = [
-            "id",
-            "event",
-            "from_state",
-            "to_state",
-            "action",
-            "actor",
-            "created_at",
-        ]
 
 
 class BudgetSerializer(serializers.ModelSerializer):
@@ -46,6 +21,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     budget = BudgetSerializer(read_only=True)
+    current_state = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -66,3 +42,11 @@ class EventSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_current_state(self, obj):
+        from django.core.exceptions import ObjectDoesNotExist
+
+        try:
+            return obj.workflow_instance.get().current_state.name
+        except ObjectDoesNotExist:
+            return None
