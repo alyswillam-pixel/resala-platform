@@ -105,6 +105,7 @@ LOCAL_APPS = [
     "resala_platform.users",
     "resala_platform.committees",
     "resala_platform.events",
+    "resala_platform.workflows",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
