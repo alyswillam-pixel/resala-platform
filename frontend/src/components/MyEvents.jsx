@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { Calendar, MapPin, DollarSign, Clock, Search, Filter, Plus, ArrowUpRight, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Calendar, MapPin, DollarSign, Clock, Search, ArrowUpRight, CheckCircle, Plus } from "lucide-react";
+import { fetchEventsApi } from "../services/api";
 
 const INITIAL_EVENTS = [
   {
-    id: 1,
+    id: "01915f01-7b89-7000-8000-000000000001",
     title: "Children's Day Festival 2026",
     location: "Nasr City Youth Center",
     date: "Oct 24, 2026 · 10:00 AM",
@@ -14,7 +15,7 @@ const INITIAL_EVENTS = [
     description: "Annual fun fair for 300+ children with interactive workshops, gifts, performance stage, and live entertainment."
   },
   {
-    id: 2,
+    id: "01915f01-7b89-7000-8000-000000000002",
     title: "Blood Drive Marathon",
     location: "Cairo University Main Campus",
     date: "Nov 05, 2026 · 09:00 AM",
@@ -25,7 +26,7 @@ const INITIAL_EVENTS = [
     description: "Collaborative campus blood drive targeting 500+ blood donations with medical team support and partner sponsors."
   },
   {
-    id: 3,
+    id: "01915f01-7b89-7000-8000-000000000003",
     title: "Ramadan Food Packs Distribution",
     location: "Resala Central Warehouse, Giza",
     date: "Mar 10, 2026 · 08:00 AM",
@@ -38,10 +39,51 @@ const INITIAL_EVENTS = [
 ];
 
 export default function MyEvents({ onNavigateToCreate }) {
+  const [events, setEvents] = useState(INITIAL_EVENTS);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
 
-  const filteredEvents = INITIAL_EVENTS.filter((evt) => {
+  useEffect(() => {
+    let isMounted = true;
+    const formatField = (val) => {
+      if (Array.isArray(val)) return val.filter(Boolean).join(", ");
+      return typeof val === "string" ? val : "";
+    };
+
+    fetchEventsApi()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const formatted = data.map((e) => {
+            const desc = typeof e.description === "object" && e.description !== null ? e.description : {};
+            const locStr = formatField(desc.where) || "Cairo HQ";
+            const dateStr = formatField(desc.when) || e.created_at || "Upcoming";
+            const whyStr = formatField(desc.why) || formatField(desc.how) || (typeof e.description === "string" ? e.description : "Event overview");
+
+            return {
+              id: e.id,
+              title: e.title,
+              location: locStr,
+              date: dateStr,
+              budget: e.budget?.amount ? parseFloat(e.budget.amount) : 0,
+              status: e.current_state === "Draft" ? "Draft" : e.current_state?.includes("Approved") ? "Approved" : "Pending Review",
+              committee: "General",
+              progress: e.current_state === "Draft" ? 15 : e.current_state?.includes("Approved") ? 80 : 45,
+              description: whyStr
+            };
+          });
+          setEvents(formatted);
+        }
+      })
+      .catch((err) => {
+        console.warn("Using cached events fallback:", err);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const filteredEvents = events.filter((evt) => {
     const matchesSearch = evt.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           evt.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === "All" || evt.status === filterStatus;
@@ -54,7 +96,7 @@ export default function MyEvents({ onNavigateToCreate }) {
     Draft: { bg: "rgba(148, 163, 184, 0.15)", text: "#64748b", border: "rgba(148, 163, 184, 0.3)" }
   };
 
-  const totalBudget = INITIAL_EVENTS.reduce((acc, curr) => acc + curr.budget, 0);
+  const totalBudget = events.reduce((acc, curr) => acc + curr.budget, 0);
 
   return (
     <div className="me-root animate-slide-up">
@@ -338,6 +380,17 @@ export default function MyEvents({ onNavigateToCreate }) {
             </button>
           ))}
         </div>
+
+        {onNavigateToCreate && (
+          <button
+            type="button"
+            className="me-filter-btn active"
+            style={{ display: "flex", alignItems: "center", gap: "6px", marginLeft: "auto" }}
+            onClick={onNavigateToCreate}
+          >
+            <Plus size={14} /> New Event
+          </button>
+        )}
       </div>
 
       {/* Event Cards Grid */}

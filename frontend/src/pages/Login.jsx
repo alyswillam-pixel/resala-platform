@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { ArrowRight, ArrowLeft, Shield, Sparkles, UserCheck, Users, Mail, Lock, User } from "lucide-react";
+import { useState } from "react";
+import { ArrowRight, ArrowLeft, Sparkles, UserCheck, Users, Mail, Lock, User } from "lucide-react";
 
 const COMMITTEES = ["Operations", "Branding", "PR & Fundraising", "HR", "Tech"];
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Calendar, PlusCircle, LayoutDashboard, CheckCircle2, User, LogOut, Sparkles } from "lucide-react";
 import CreateEvent from "../components/CreateEvent";
 import MyEvents from "../components/MyEvents";
@@ -272,7 +272,9 @@ export default function ResalaHome({ userAuth, onNavigateToLogin }) {
           <MyEvents onNavigateToCreate={() => setActiveTab("create")} />
         )}
         {role === "planner" && activeTab === "create" && (
-          <CreateEvent />
+          <CreateEvent
+            onNavigateToEvents={() => setActiveTab("events")}
+          />
         )}
         {role === "planner" && activeTab === "approvals" && (
           <ApprovalsQueue

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { CheckCircle2, XCircle, Edit3, Clock, DollarSign, ExternalLink, Save, X, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, XCircle, Edit3, Clock, Save, X, Sparkles } from "lucide-react";
 
-export default function ApprovalsQueue({ tasks, onApproveTask, onDenyTask, onEditTask, role }) {
+export default function ApprovalsQueue({ tasks, onApproveTask, onDenyTask, onEditTask }) {
   const [editingTask, setEditingTask] = useState(null);
   const [editForm, setEditForm] = useState({ title: "", budget: "", notes: "", committee: "" });
   const [toast, setToast] = useState(null);
