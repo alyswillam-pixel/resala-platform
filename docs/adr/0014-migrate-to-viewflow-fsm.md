@@ -1,7 +1,7 @@
 # [Number] - [Short Decision Title]
 
  **Date:** 2026-08-20
- **Status:** Accepted
+ **Status:** Superseded by [ADR-0017](0017-database-driven-generic-workflow-engine.md)
 
 ## Context
 

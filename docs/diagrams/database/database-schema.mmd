@@ -1,11 +1,10 @@
 erDiagram
     COMMITTEE ||--o{ COMMITTEE_ROLE : "defines"
+    COMMITTEE ||--o{ COMMITTEE_CAPABILITY : "has"
     COMMITTEE_ROLE ||--o{ USER : "has members"
     COMMITTEE ||--o| USER : "director"
     COMMITTEE ||--o| USER : "vice_director"
     USER ||--o{ EVENT : "requester"
-    EVENT ||--o{ EVENT_STATE_TRANSITION : "logs"
-    USER ||--o{ EVENT_STATE_TRANSITION : "actor"
     EVENT ||--o| BUDGET : "has"
     USER ||--o{ BUDGET : "approves"
     EVENT ||--o{ REQUEST : "spawns"
@@ -18,7 +17,31 @@ erDiagram
     USER ||--o{ REQUEST_ASSIGNMENT_HISTORY : "assigned by/to"
     REQUEST ||--o{ REQUEST_ESCALATION : "may have"
     USER ||--o{ REQUEST_ESCALATION : "raised_by / handled_by"
+    
+    %% Workflow System Relations
+    CONTENT_TYPE ||--o{ WORKFLOW : "applies to"
+    USER ||--o{ WORKFLOW : "created by"
+    WORKFLOW ||--o{ WORKFLOW_STATE : "has states"
+    COMMITTEE ||--o{ WORKFLOW_STATE : "review_committee (optional)"
+    WORKFLOW ||--o{ WORKFLOW_TRANSITION : "has transitions"
+    WORKFLOW_STATE ||--o{ WORKFLOW_TRANSITION : "source / target"
+    WORKFLOW_TRANSITION ||--o{ WORKFLOW_TRANSITION_RULE : "authorized by rules"
+    COMMITTEE ||--o{ WORKFLOW_TRANSITION_RULE : "committee (optional)"
+    WORKFLOW_TRANSITION ||--o{ WORKFLOW_TRANSITION_ACTION : "executes actions"
+    WORKFLOW ||--o{ WORKFLOW_INSTANCE : "creates instances"
+    WORKFLOW_STATE ||--o{ WORKFLOW_INSTANCE : "current_state"
+    CONTENT_TYPE ||--o{ WORKFLOW_INSTANCE : "content_type"
+    WORKFLOW_INSTANCE ||--o{ WORKFLOW_TRANSITION_LOG : "logs"
+    WORKFLOW_TRANSITION ||--o{ WORKFLOW_TRANSITION_LOG : "transition"
+    WORKFLOW_STATE ||--o{ WORKFLOW_TRANSITION_LOG : "from/to state"
+    USER ||--o{ WORKFLOW_TRANSITION_LOG : "actor"
 
+    CONTENT_TYPE {
+        int id PK
+        string app_label
+        string model
+    }
+    
     COMMITTEE {
         uuid id PK
         string name
@@ -26,6 +49,12 @@ erDiagram
         uuid director_id FK
         uuid vice_director_id FK
         bool is_presidential_office
+    }
+    COMMITTEE_CAPABILITY {
+        uuid id PK
+        uuid committee_id FK
+        string capability
+        datetime added_at
     }
     USER {
         uuid id PK
@@ -47,21 +76,10 @@ erDiagram
     EVENT {
         uuid id PK
         string title
-        string description
+        jsonb description
         uuid requester_id FK
-        string current_state
         datetime created_at
         datetime updated_at
-    }
-    EVENT_STATE_TRANSITION {
-        uuid id PK
-        uuid event_id FK
-        string from_state
-        string to_state
-        string action
-        uuid actor_id FK
-        string note
-        datetime created_at
     }
     BUDGET {
         uuid id PK
@@ -72,6 +90,69 @@ erDiagram
         datetime created_at
         datetime updated_at
     }
+    
+    %% Generic Workflows
+    WORKFLOW {
+        uuid id PK
+        string name
+        string description
+        int content_type_id FK
+        bool is_active
+        uuid created_by_id FK
+        datetime created_at
+        datetime updated_at
+    }
+    WORKFLOW_STATE {
+        uuid id PK
+        uuid workflow_id FK
+        string name
+        string description
+        bool is_initial
+        bool is_terminal
+        uuid review_committee_id FK
+    }
+    WORKFLOW_TRANSITION {
+        uuid id PK
+        uuid workflow_id FK
+        string name
+        string description
+        uuid source_id FK
+        uuid target_id FK
+    }
+    WORKFLOW_TRANSITION_RULE {
+        uuid id PK
+        uuid transition_id FK
+        string authorization_type
+        string capability
+        uuid committee_id FK
+    }
+    WORKFLOW_TRANSITION_ACTION {
+        uuid id PK
+        uuid transition_id FK
+        string action_type
+        string value
+        int order
+    }
+    WORKFLOW_INSTANCE {
+        uuid id PK
+        uuid workflow_id FK
+        uuid current_state_id FK
+        int content_type_id FK
+        uuid object_id
+        datetime created_at
+        datetime updated_at
+    }
+    WORKFLOW_TRANSITION_LOG {
+        uuid id PK
+        uuid instance_id FK
+        uuid transition_id FK
+        uuid from_state_id FK
+        uuid to_state_id FK
+        uuid actor_id FK
+        string note
+        date created_at
+    }
+
     REQUEST {
         uuid id PK
         uuid event_id FK
